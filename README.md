@@ -1,5 +1,14 @@
-# automl_app
+<div align="center">
 
+<img src="https://grid-hackthon.s3.amazonaws.com/flashy/logo.png" width="400px">
+
+**The AutoML App**
+
+</div>
+
+## Running the app
+
+To run the app, execute the following commands:
 ```bash
 conda create --name automl python=3.8
 conda activate automl
