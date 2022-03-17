@@ -1,4 +1,3 @@
-import tempfile
 import torch
 from typing import Any, Dict
 import os
@@ -48,10 +47,8 @@ class FiftyOneScheduler(LightningFlow):
         self.run_work = FiftyOneTemplateTracer()
         self.launcher_work = FiftyOneLauncher()
 
-        self.script_dir = tempfile.mkdtemp()
-
+        self.script_dir = None
         self.run_id = None
-
         self.done = False
 
     def run(self, run: Dict[str, Any], checkpoint: str):

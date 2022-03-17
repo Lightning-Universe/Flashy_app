@@ -1,4 +1,3 @@
-import tempfile
 from typing import Any, Dict, List, Optional
 import os.path
 
@@ -54,7 +53,7 @@ class RunScheduler(LightningFlow):
 
         self.data_downloader = DataDownloader()
 
-        self.script_dir = tempfile.mkdtemp()
+        self.script_dir = None
 
         self.queued_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs = None

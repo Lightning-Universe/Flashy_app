@@ -1,3 +1,5 @@
+import tempfile
+
 from flashy.data_manager import DataManager
 from flashy.hpo_manager import HPOManager
 from flashy.task_selector import TaskSelector
@@ -10,9 +12,14 @@ class Flashy(LightningFlow):
     def __init__(self):
         super().__init__()
 
+        self.script_dir = tempfile.mkdtemp()
+
         self.task_selector: LightningFlow = TaskSelector()
         self.data_manager: LightningFlow = DataManager()
         self.hpo_manager: LightningFlow = HPOManager()
+
+        self.hpo_manager.run_scheduler.script_dir = self.script_dir
+        self.hpo_manager.fiftyone_scheduler.script_dir = self.script_dir
 
     def run(self):
         self.task_selector.run()
