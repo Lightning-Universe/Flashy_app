@@ -1,7 +1,7 @@
 import tempfile
 import torch
 from typing import Any, Dict
-import os.path
+import os
 
 from flash.core.integrations.fiftyone import visualize
 
@@ -19,11 +19,13 @@ class FiftyOneLauncher(LightningWork):
     def __init__(self):
         super().__init__(blocking=True)
 
-    def run(self, predictions_path: str):
+    def run(self, predictions_path: str, root: str):
         global session
         if session is not None:
             session.close()
         predictions = torch.load(predictions_path)
+
+        os.chdir(root)
         session = visualize(predictions, wait=False, remote=True)
 
 
@@ -60,5 +62,5 @@ class FiftyOneScheduler(LightningFlow):
 
         predictions_path = os.path.join(self.script_dir, f"{run['id']}_predictions.pt")
         if os.path.exists(predictions_path) and self.run_work.has_completed:
-            self.launcher_work.run(predictions_path)
+            self.launcher_work.run(predictions_path, self.script_dir)
         self.done = True
