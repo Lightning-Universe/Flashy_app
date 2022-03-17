@@ -3,7 +3,6 @@ import functools
 import streamlit as st
 from sentence_transformers import util
 import torch
-import base64
 from flash.text import TextEmbedder, TextClassificationData
 from flash import Trainer
 
@@ -66,14 +65,11 @@ def set_bg_hack(main_bg):
     -------
     The background.
     '''
-    # set bg name
-    main_bg_ext = "png"
-        
     st.markdown(
          f"""
          <style>
          .stApp {{
-             background: url(data:image/{main_bg_ext};base64,{base64.b64encode(open(main_bg, "rb").read()).decode()});
+             background: url({main_bg});
              background-size: cover
          }}
          </style>
@@ -84,7 +80,7 @@ def set_bg_hack(main_bg):
 
 def render_fn(state: AppState) -> None:
     st.set_page_config(layout="wide")
-    set_bg_hack('Flashy.png')
+    set_bg_hack("https://grid-hackthon.s3.amazonaws.com/flashy/background.png")
 
     st.write("![logo](https://grid-hackthon.s3.amazonaws.com/flashy/logo.png)")
 
