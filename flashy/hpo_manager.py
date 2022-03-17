@@ -50,6 +50,8 @@ class HPOManager(LightningFlow):
     def __init__(self):
         super().__init__()
 
+        self.has_run = False
+
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
 
         self.selected_task: Optional[str] = None
@@ -66,6 +68,7 @@ class HPOManager(LightningFlow):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
         if self.generated_runs is not None:
+            self.has_run = True
             runs: List[Dict[str, Any]] = self.generated_runs
             for run in runs:
                 run["url"] = url
@@ -114,7 +117,7 @@ def render_fn(state: AppState) -> None:
 
     performance = st.select_slider("Target performance", ("low", "medium", "high"))
 
-    start_runs = st.button("Start training!")
+    start_runs = st.button("Start training!", disabled=state.has_run)
 
     if start_runs:
         if performance:
@@ -165,9 +168,12 @@ def render_fn(state: AppState) -> None:
                             time.sleep(1)
                             raise RerunException(RerunData())
                 else:
-                    explore = st.button("Explore!", key=result[0]["id"], on_click=set_explore_id(result[0]["id"]))
-                    if explore:
-                        raise RerunException(RerunData())
+                    if result[1] != "Failed":
+                        explore = st.button("Explore!", key=result[0]["id"], on_click=set_explore_id(result[0]["id"]))
+                        if explore:
+                            raise RerunException(RerunData())
+                    else:
+                        st.write("Failed")
 
     if state.run_scheduler.running_runs or state.run_scheduler.queued_runs:
         with st.spinner("Training..."):

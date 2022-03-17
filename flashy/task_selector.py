@@ -13,7 +13,7 @@ from lightning.utilities.state import AppState
 from flashy.utilities import add_flashy_styles
 
 
-@functools.lru_cache(1)
+@functools.lru_cache()
 def get_embeddings_embedder():
     embeddings = torch.hub.load_state_dict_from_url(
         "https://grid-hackthon.s3.amazonaws.com/flashy/flashy_embeddings.pt"
@@ -40,8 +40,6 @@ class TaskSelector(LightningFlow):
 
 @functools.lru_cache()
 def get_suggested_tasks(question):
-    if not question:
-        return []
     query_datamodule = TextClassificationData.from_lists(
         predict_data=[question],
         batch_size=1,
@@ -64,19 +62,20 @@ def render_fn(state: AppState) -> None:
 
     st.markdown('<p style="font-family:Courier; font-size: 25px;">What do you want to build?</p>', unsafe_allow_html=True)
 
-    state.question = st.text_input(
+    question = st.text_input(
         "",
-        state.question if state.question else "",
         placeholder="e.g. detect mask wearing in images",
     )
 
-    with st.spinner("Loading..."):
-        suggested_tasks = get_suggested_tasks(state.question)
+    if question:
+        with st.spinner("Loading..."):
+            suggested_tasks = get_suggested_tasks(question)
+    else:
+        suggested_tasks = []
 
     if suggested_tasks:
         st.markdown('<p style="font-family:Courier; font-size: 20px;">Suggested tasks</p>', unsafe_allow_html=True)
-        index = suggested_tasks.index(state.selected_task) if state.selected_task else 0
-        state.selected_task = st.radio("", suggested_tasks, index=index)
+        state.selected_task = st.radio("", suggested_tasks)
 
         st.write("""
             Now <a href="http://127.0.0.1:7501/view/Data" target="_parent">configure your data!</a>

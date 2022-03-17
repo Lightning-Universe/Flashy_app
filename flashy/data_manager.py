@@ -61,10 +61,9 @@ def render_fn(state: AppState) -> None:
     else:
         st.write("Currently only `image_classification` is supported.")
 
-        switch = st.button("Switch to image classification")
-        if switch:
-            state.selected_task = "image_classification"
-            raise RerunException(RerunData())
+        st.write("""
+            <a href="http://127.0.0.1:7501/view/Task" target="_parent">Go back</a>
+        """, unsafe_allow_html=True)
 
     if state.config is not None:
         st.write("""

@@ -19,8 +19,6 @@ class Flashy(LightningFlow):
 
         if self.task_selector.selected_task is not None:
             selected_task = self.task_selector.selected_task
-            if self.data_manager.selected_task is not None:
-                selected_task = self.data_manager.selected_task
             self.data_manager.run(selected_task)
 
             if self.data_manager.config is not None:
