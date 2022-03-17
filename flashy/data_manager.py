@@ -8,6 +8,8 @@ from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
+from flashy.utilities import add_flashy_styles
+
 
 class DataManager(LightningFlow):
     """The DataManager allows a user to configure the data module options for their task.
@@ -30,9 +32,8 @@ class DataManager(LightningFlow):
         return StreamlitFrontend(render_fn=render_fn)
 
 
+@add_flashy_styles
 def render_fn(state: AppState) -> None:
-    st.set_page_config(layout="wide")
-
     st.title("Load your data!")
 
     # TODO: Auto-generate this

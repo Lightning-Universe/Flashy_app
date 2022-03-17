@@ -13,6 +13,8 @@ from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
+from flashy.utilities import add_flashy_styles
+
 _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
     "image_classification": {
         "demo": {
@@ -77,12 +79,14 @@ class HPOManager(LightningFlow):
         if self.running_runs is not None:
             running_runs = []
             for run in self.running_runs:
-                out_file = os.path.join(self.run_scheduler.script_dir, f"{run['id']}.txt")
+                out_file = os.path.join(self.run_scheduler.script_dir, str(run["id"]), f"{run['id']}.txt")
                 if os.path.exists(out_file):
                     with open(out_file, 'r') as results:
                         monitor = results.read()
-                        monitor = float(monitor.replace('\n', '')) if monitor else "0.0"
+                        monitor = float(monitor.replace('\n', '')) if monitor else 0.0
                         self.results.append((run, monitor))
+                elif getattr(self.run_scheduler, f"run_work_{run['id']}").has_failed:
+                    self.results.append((run, "Failed"))
                 else:
                     running_runs.append(run)
                 self.running_runs = running_runs
@@ -93,26 +97,17 @@ class HPOManager(LightningFlow):
                 if result[0]["id"] == self.explore_id:
                     run = result[0]
                     break
-            self.fiftyone_scheduler.run(run, os.path.join(self.run_scheduler.script_dir, f"{self.explore_id}.pt"))
+            self.fiftyone_scheduler.run(
+                run,
+                os.path.join(self.run_scheduler.script_dir, str(run["id"]), f"{self.explore_id}.pt")
+            )
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
 
 
+@add_flashy_styles
 def render_fn(state: AppState) -> None:
-    st.set_page_config(layout="wide")
-
-    st.markdown(
-        f"""
-         <style>
-         .stButton>button {{
-            height: 25.59px;
-        }}
-         </style>
-         """,
-        unsafe_allow_html=True
-    )
-
     st.title("Build your model!")
 
     quality = st.select_slider("Model type", _search_spaces[state.selected_task].keys())
@@ -174,7 +169,7 @@ def render_fn(state: AppState) -> None:
                     if explore:
                         raise RerunException(RerunData())
 
-    if state.running_runs:
+    if state.running_runs or state.queued_runs:
         with st.spinner("Training..."):
-            time.sleep(5)
+            time.sleep(2)
             raise RerunException(RerunData())

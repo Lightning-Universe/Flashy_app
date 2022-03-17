@@ -1,6 +1,8 @@
 import tempfile
 from typing import Any, Dict, List
 import os.path
+
+from flash.core.data.utils import download_data
 from jinja2 import Environment, FileSystemLoader
 
 from lightning import LightningFlow
@@ -41,8 +43,9 @@ class RunScheduler(LightningFlow):
 
     def run(self, runs: List[Dict[str, Any]]):
         for run in runs:
-            _generate_script(self.script_dir, run, f"{run['task']}.jinja", rendering=False)
-            # _generate_script(self.script_dir, run, f"{run['task']}_rendered.py", rendering=True)
+            root = os.path.join(self.script_dir, str(run["id"]))
+            os.makedirs(root)
+            _generate_script(root, run, f"{run['task']}.jinja", rendering=False)
             run_work = getattr(self, f"run_work_{run['id']}")
-            run_work.script_path = str(os.path.join(self.script_dir, f"{run['id']}_{run['task']}.py"))
+            run_work.script_path = str(os.path.join(root, f"{run['id']}_{run['task']}.py"))
             run_work.run()

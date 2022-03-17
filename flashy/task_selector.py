@@ -10,6 +10,8 @@ from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
+from flashy.utilities import add_flashy_styles
+
 
 @functools.lru_cache(1)
 def get_embeddings_embedder():
@@ -56,35 +58,10 @@ def get_suggested_tasks(question):
     return list({embeddings["task_mapping"][int(result.item())]: None for result in top_results.indices}.keys())[:3]
 
 
-def set_bg_hack(main_bg):
-    '''
-    A function to unpack an image from root folder and set as bg.
-    # https://discuss.streamlit.io/t/how-do-i-use-a-background-image-on-streamlit/5067/16
-
-    Returns
-    -------
-    The background.
-    '''
-    st.markdown(
-         f"""
-         <style>
-         .stApp {{
-             background: url({main_bg});
-             background-size: cover
-         }}
-         </style>
-         """,
-         unsafe_allow_html=True
-     )
-
-
+@add_flashy_styles
 def render_fn(state: AppState) -> None:
-    st.set_page_config(layout="wide")
-    set_bg_hack("https://grid-hackthon.s3.amazonaws.com/flashy/background.png")
-
     st.write("![logo](https://grid-hackthon.s3.amazonaws.com/flashy/logo.png)")
 
-    st.markdown('<p style="font-family:Courier; font-weight:bold; font-size: 40px;">Choose your task</p>', unsafe_allow_html=True)
     st.markdown('<p style="font-family:Courier; font-size: 25px;">What do you want to build?</p>', unsafe_allow_html=True)
 
     state.question = st.text_input(
