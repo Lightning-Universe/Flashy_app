@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://grid-hackthon.s3.amazonaws.com/flashy/logo.png" width="400px">
+<img src="https://grid-hackthon.s3.amazonaws.com/flashy/logo.png" width="100%">
 
 **The AutoML App**
 
