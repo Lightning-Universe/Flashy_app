@@ -121,10 +121,11 @@ def render_fn(state: AppState) -> None:
 
     if start_runs:
         if performance:
+            # TODO: Currently medium == high but should be changed when dynamic works are supported
             performance_runs = {
                 "low": 1,
                 "medium": 10,
-                "high": 100,
+                "high": 10,
             }
             state.generated_runs = _generate_runs(
                 performance_runs[performance], state.selected_task, _search_spaces[state.selected_task][quality]
