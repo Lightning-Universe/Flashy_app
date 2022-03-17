@@ -70,7 +70,8 @@ def render_fn(state: AppState) -> None:
         placeholder="e.g. detect mask wearing in images",
     )
 
-    suggested_tasks = get_suggested_tasks(state.question)
+    with st.spinner("Loading..."):
+        suggested_tasks = get_suggested_tasks(state.question)
 
     if suggested_tasks:
         st.markdown('<p style="font-family:Courier; font-size: 20px;">Suggested tasks</p>', unsafe_allow_html=True)

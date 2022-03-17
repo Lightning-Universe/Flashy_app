@@ -50,8 +50,8 @@ class HPOManager(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        self.queued_runs: Optional[List[Dict[str, Any]]] = None
-        self.running_runs = None
+        self.generated_runs: Optional[List[Dict[str, Any]]] = None
+
         self.selected_task: Optional[str] = None
 
         self.explore_id: Optional[str] = None
@@ -65,21 +65,21 @@ class HPOManager(LightningFlow):
     def run(self, selected_task: str, url, method, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
-        if self.queued_runs is not None:
-            runs: List[Dict[str, Any]] = self.queued_runs
+        if self.generated_runs is not None:
+            runs: List[Dict[str, Any]] = self.generated_runs
             for run in runs:
                 run["url"] = url
                 run["method"] = method
                 run["data_config"] = data_config
-            self.run_scheduler.run(runs)
+            self.run_scheduler.queued_runs = runs
+            self.generated_runs = None
 
-            self.running_runs = runs
-            self.queued_runs = None
+        self.run_scheduler.run()
 
-        if self.running_runs is not None:
+        if self.run_scheduler.running_runs is not None:
             running_runs = []
-            for run in self.running_runs:
-                out_file = os.path.join(self.run_scheduler.script_dir, str(run["id"]), f"{run['id']}.txt")
+            for run in self.run_scheduler.running_runs:
+                out_file = os.path.join(self.run_scheduler.script_dir, f"{run['id']}.txt")
                 if os.path.exists(out_file):
                     with open(out_file, 'r') as results:
                         monitor = results.read()
@@ -89,7 +89,7 @@ class HPOManager(LightningFlow):
                     self.results.append((run, "Failed"))
                 else:
                     running_runs.append(run)
-                self.running_runs = running_runs
+                self.run_scheduler.running_runs = running_runs
 
         if self.explore_id is not None:
             run = None
@@ -99,7 +99,7 @@ class HPOManager(LightningFlow):
                     break
             self.fiftyone_scheduler.run(
                 run,
-                os.path.join(self.run_scheduler.script_dir, str(run["id"]), f"{self.explore_id}.pt")
+                os.path.join(self.run_scheduler.script_dir, f"{self.explore_id}.pt")
             )
 
     def configure_layout(self):
@@ -123,7 +123,7 @@ def render_fn(state: AppState) -> None:
                 "medium": 10,
                 "high": 100,
             }
-            state.queued_runs = _generate_runs(
+            state.generated_runs = _generate_runs(
                 performance_runs[performance], state.selected_task, _search_spaces[state.selected_task][quality]
             )
             raise RerunException(RerunData())
@@ -169,7 +169,7 @@ def render_fn(state: AppState) -> None:
                     if explore:
                         raise RerunException(RerunData())
 
-    if state.running_runs or state.queued_runs:
+    if state.run_scheduler.running_runs or state.run_scheduler.queued_runs:
         with st.spinner("Training..."):
             time.sleep(2)
             raise RerunException(RerunData())
