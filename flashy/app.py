@@ -1,6 +1,6 @@
-from hackathon.auto_ml.data_manager import DataManager
-from hackathon.auto_ml.hpo_manager import HPOManager
-from hackathon.auto_ml.task_selector import TaskSelector
+from flashy.data_manager import DataManager
+from flashy.hpo_manager import HPOManager
+from flashy.task_selector import TaskSelector
 from lightning import LightningApp, LightningFlow
 
 

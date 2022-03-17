@@ -6,11 +6,13 @@ from jinja2 import Environment, FileSystemLoader
 from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
 
-env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates")))
+import flashy
+
+env = Environment(loader=FileSystemLoader(flashy.TEMPLATES_ROOT))
 
 
 def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs):
-    template = env.get_template(template_file)
+    template = env.get_template(os.path.join(template_file))
 
     variables = {
         "root": script_dir,
@@ -22,7 +24,7 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs):
         **kwargs
     }
 
-    with open(os.path.join(script_dir, f"{run['id']}_{template_file}"), "w") as f:
+    with open(os.path.join(script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}"), "w") as f:
         f.write(template.render(**variables))
 
 
@@ -39,7 +41,7 @@ class RunScheduler(LightningFlow):
 
     def run(self, runs: List[Dict[str, Any]]):
         for run in runs:
-            _generate_script(self.script_dir, run, f"{run['task']}.py", rendering=False)
+            _generate_script(self.script_dir, run, f"{run['task']}.jinja", rendering=False)
             # _generate_script(self.script_dir, run, f"{run['task']}_rendered.py", rendering=True)
             run_work = getattr(self, f"run_work_{run['id']}")
             run_work.script_path = str(os.path.join(self.script_dir, f"{run['id']}_{run['task']}.py"))

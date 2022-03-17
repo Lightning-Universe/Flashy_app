@@ -7,8 +7,8 @@ import streamlit as st
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
 
-from hackathon.auto_ml.fiftyone import FiftyOneScheduler
-from hackathon.auto_ml.run_scheduler import RunScheduler
+from flashy.fiftyone import FiftyOneScheduler
+from flashy.run_scheduler import RunScheduler
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState

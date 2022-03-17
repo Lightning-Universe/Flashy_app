@@ -24,12 +24,6 @@ class DataManager(LightningFlow):
         self.selected_task: Optional[str] = None
 
     def run(self, selected_task: str):
-        # self.url = "https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip"
-        # self.method = "from_folders"
-        # self.config = {
-        #     "train_folder": "hymenoptera_data/train/",
-        #     "val_folder": "hymenoptera_data/val/",
-        # }
         self.selected_task = selected_task.lower().replace(" ", "_")
 
     def configure_layout(self):

@@ -7,5 +7,5 @@ git clone this_repo
 cd this_repo
 pip install -r requirements.txt
 
-lightning start app flashy.py
+lightning start app app.py
 ```

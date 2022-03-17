@@ -30,6 +30,9 @@ class TaskSelector(LightningFlow):
         self.selected_task = None
         self.question = None
 
+    def run(self) -> None:
+        pass
+
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
 

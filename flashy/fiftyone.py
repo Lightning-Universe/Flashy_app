@@ -5,7 +5,7 @@ import os.path
 
 from flash.core.integrations.fiftyone import visualize
 
-from hackathon.auto_ml.run_scheduler import _generate_script
+from flashy.run_scheduler import _generate_script
 from lightning import LightningFlow, LightningWork
 from lightning.components.python import TracerPythonScript
 
@@ -33,7 +33,7 @@ class FiftyOneTemplateTracer(TracerPythonScript):
         super().__init__(__file__, blocking=True)
 
     def run(self, run: Dict[str, Any], checkpoint: str, script_dir: str):
-        _generate_script(script_dir, run, f"{run['task']}_fiftyone.py", checkpoint=checkpoint)
+        _generate_script(script_dir, run, f"{run['task']}_fiftyone.jinja", checkpoint=checkpoint)
         self.script_path = str(os.path.join(script_dir, f"{run['id']}_{run['task']}_fiftyone.py"))
         super().run()
 

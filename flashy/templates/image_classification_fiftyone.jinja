@@ -6,6 +6,8 @@ import flash
 from flash.core.data.utils import download_data
 from flash.image import ImageClassificationData, ImageClassifier
 
+os.chdir("{{ root }}")
+
 # 1 Download data
 download_data("{{ url }}", ".")
 

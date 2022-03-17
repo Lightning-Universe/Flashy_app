@@ -2,6 +2,11 @@ import flash
 from flash.core.data.utils import download_data
 from flash.image import ImageClassificationData, ImageClassifier
 
+{% if not rendering %}
+import os
+os.chdir("{{ root }}")
+{% endif %}
+
 download_data("{{ url }}", ".")
 
 datamodule = ImageClassificationData.from_{{ method }}(
