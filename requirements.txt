@@ -4,5 +4,5 @@ lightning-cloud == 0.0.1
 lightning-flash[image,text]
 fiftyone
 ray[tune]
-streamlit
+streamlit == 1.7.0
 jinja2
