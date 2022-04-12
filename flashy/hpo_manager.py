@@ -82,13 +82,10 @@ class HPOManager(LightningFlow):
         if self.run_scheduler.running_runs is not None:
             running_runs = []
             for run in self.run_scheduler.running_runs:
-                out_file = os.path.join(self.run_scheduler.script_dir, f"{run['id']}.txt")
-                if os.path.exists(out_file):
-                    with open(out_file, 'r') as results:
-                        monitor = results.read()
-                        monitor = float(monitor.replace('\n', '')) if monitor else 0.0
-                        self.results.append((run, monitor))
-                elif getattr(self.run_scheduler, f"run_work_{run['id']}").has_failed:
+                run_work = getattr(self.run_scheduler, f"run_work_{run['id']}")
+                if run_work.has_succeeded:
+                    self.results.append((run, run_work.monitor))
+                elif run_work.has_failed:
                     self.results.append((run, "Failed"))
                 else:
                     running_runs.append(run)
@@ -103,7 +100,7 @@ class HPOManager(LightningFlow):
 
             self.fiftyone_scheduler.run(
                 run,
-                self.best_model_path
+                getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path
             )
 
     def configure_layout(self):

@@ -36,14 +36,21 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -
 class RunGeneratedScript(TracerPythonScript):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, raise_exception=True, **kwargs)
         self.script_dir = None
+        self.run_dict = None
         self.best_model_path: Optional[Path] = None
+        self.monitor = None
 
-    def run(self, script_dir: str, run: Dict[str, str]):
-        self.script_path = _generate_script(script_dir, run, f"{run['task']}.jinja", rendering=False)
+    def run(self, script_dir: str, run_dict: Dict[str, str]):
+        self.script_dir = script_dir
+        self.run_dict = run_dict
+        self.script_path = _generate_script(script_dir, run_dict, f"{run_dict['task']}.jinja", rendering=False)
         super().run()
-        self.best_model_path = Path(os.path.join(script_dir, f"{run['run_id']}.pt"))
+
+    def on_after_run(self, res):
+        self.monitor = float(res['trainer'].callback_metrics["val_accuracy"].item())
+        self.best_model_path = Path(os.path.join(self.script_dir, f"{self.run_dict['id']}.pt"))
 
 class RunScheduler(LightningFlow):
 
