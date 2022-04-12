@@ -1,4 +1,13 @@
 import tempfile
+import subprocess
+import os
+
+if bool(int(os.getenv("INSTALL", '1'))):
+    # FIXME: Install flashy as setup.py doesn't work in the cloud.
+    with subprocess.Popen(
+        "pip install -e .".split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, close_fds=True
+    ) as proc:
+        proc.wait()
 
 from flashy.data_manager import DataManager
 from flashy.hpo_manager import HPOManager
