@@ -10,7 +10,12 @@ from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
-from flashy.utilities import add_flashy_styles
+import os
+import sys
+
+sys.path.append(os.path.dirname(__file__))
+
+from utilities import add_flashy_styles
 
 
 @functools.lru_cache()

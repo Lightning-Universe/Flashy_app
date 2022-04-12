@@ -8,9 +8,12 @@ from lightning import LightningFlow, LightningWork
 from lightning.storage.path import Path
 from lightning.components.python import TracerPythonScript
 
-import flashy
+import os
+import sys
 
-env = Environment(loader=FileSystemLoader(flashy.TEMPLATES_ROOT))
+sys.path.append(os.path.dirname(__file__))
+
+env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates")))
 
 
 def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -> str:

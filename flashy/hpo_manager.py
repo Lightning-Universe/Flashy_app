@@ -7,13 +7,18 @@ import streamlit as st
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
 
-from flashy.fiftyone import FiftyOneScheduler
-from flashy.run_scheduler import RunScheduler
+import os
+import sys
+
+sys.path.append(os.path.dirname(__file__))
+
+from fiftyone_scheduler import FiftyOneScheduler
+from run_scheduler import RunScheduler
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
-from flashy.utilities import add_flashy_styles
+from utilities import add_flashy_styles
 
 _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
     "image_classification": {

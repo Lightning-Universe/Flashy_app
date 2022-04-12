@@ -1,17 +1,13 @@
 import tempfile
-import subprocess
+
 import os
+import sys
 
-if bool(int(os.getenv("INSTALL", '1'))):
-    # FIXME: Install flashy as setup.py doesn't work in the cloud.
-    with subprocess.Popen(
-        "pip install -e .".split(' '), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=0, close_fds=True
-    ) as proc:
-        proc.wait()
+sys.path.append(os.path.dirname(__file__))
 
-from flashy.data_manager import DataManager
-from flashy.hpo_manager import HPOManager
-from flashy.task_selector import TaskSelector
+from data_manager import DataManager
+from hpo_manager import HPOManager
+from task_selector import TaskSelector
 from lightning import LightningApp, LightningFlow
 
 

@@ -4,7 +4,12 @@ import os
 
 from flash.core.integrations.fiftyone import visualize
 
-from flashy.run_scheduler import _generate_script
+import os
+import sys
+
+sys.path.append(os.path.dirname(__file__))
+
+from run_scheduler import _generate_script
 from lightning import LightningFlow, LightningWork
 from lightning.components.python import TracerPythonScript
 
