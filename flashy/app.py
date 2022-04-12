@@ -1,14 +1,13 @@
-import tempfile
-
 import os
 import sys
+import tempfile
 
 sys.path.append(os.path.dirname(__file__))
 
 from data_manager import DataManager
 from hpo_manager import HPOManager
-from task_selector import TaskSelector
 from lightning import LightningApp, LightningFlow
+from task_selector import TaskSelector
 
 
 class Flashy(LightningFlow):
@@ -45,7 +44,10 @@ class Flashy(LightningFlow):
             {"name": "Task", "content": self.task_selector},
             {"name": "Data", "content": self.data_manager},
             {"name": "Model", "content": self.hpo_manager},
-            {"name": "Data Explorer", "content": self.hpo_manager.exposed_url("fiftyone")},
+            {
+                "name": "Data Explorer",
+                "content": self.hpo_manager.exposed_url("fiftyone"),
+            },
             # {"name": "Swagger UI", "content": "http://127.0.0.1:8000/docs"},
             # {"name": "Demo", "content": self.demo_ui},
         ]

@@ -1,19 +1,20 @@
-from typing import Any, Dict, List, Optional
+import os
 import os.path
+import sys
+from typing import Any, Dict, List, Optional
 
 from flash.core.data.utils import download_data
 from jinja2 import Environment, FileSystemLoader
-
 from lightning import LightningFlow, LightningWork
-from lightning.storage.path import Path
 from lightning.components.python import TracerPythonScript
-
-import os
-import sys
+from lightning.storage.path import Path
 
 sys.path.append(os.path.dirname(__file__))
 
-env = Environment(loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates")))
+
+env = Environment(
+    loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates"))
+)
 
 
 def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -> str:
@@ -23,13 +24,15 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -
         "root": script_dir,
         "run_id": run["id"],
         "url": run["url"],
-        "method": run['method'],
-        "data_config": run['data_config'],
-        "model_config": run['model_config'],
-        **kwargs
+        "method": run["method"],
+        "data_config": run["data_config"],
+        "model_config": run["model_config"],
+        **kwargs,
     }
 
-    generated_script = os.path.join(script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}")
+    generated_script = os.path.join(
+        script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}"
+    )
     with open(generated_script, "w") as f:
         f.write(template.render(**variables))
 
@@ -37,7 +40,6 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -
 
 
 class RunGeneratedScript(TracerPythonScript):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, raise_exception=True, **kwargs)
         self.script_dir = None
@@ -48,15 +50,19 @@ class RunGeneratedScript(TracerPythonScript):
     def run(self, script_dir: str, run_dict: Dict[str, str]):
         self.script_dir = script_dir
         self.run_dict = run_dict
-        self.script_path = _generate_script(script_dir, run_dict, f"{run_dict['task']}.jinja", rendering=False)
+        self.script_path = _generate_script(
+            script_dir, run_dict, f"{run_dict['task']}.jinja", rendering=False
+        )
         super().run()
 
     def on_after_run(self, res):
-        self.monitor = float(res['trainer'].callback_metrics["val_accuracy"].item())
-        self.best_model_path = Path(os.path.join(self.script_dir, f"{self.run_dict['id']}.pt"))
+        self.monitor = float(res["trainer"].callback_metrics["val_accuracy"].item())
+        self.best_model_path = Path(
+            os.path.join(self.script_dir, f"{self.run_dict['id']}.pt")
+        )
+
 
 class RunScheduler(LightningFlow):
-
     def __init__(self):
         super().__init__()
 
