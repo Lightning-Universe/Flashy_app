@@ -5,6 +5,7 @@ from flash.core.data.utils import download_data
 from jinja2 import Environment, FileSystemLoader
 
 from lightning import LightningFlow, LightningWork
+from lightning.storage.path import Path
 from lightning.components.python import TracerPythonScript
 
 import flashy
@@ -12,7 +13,7 @@ import flashy
 env = Environment(loader=FileSystemLoader(flashy.TEMPLATES_ROOT))
 
 
-def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs):
+def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -> str:
     template = env.get_template(os.path.join(template_file))
 
     variables = {
@@ -25,22 +26,24 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs):
         **kwargs
     }
 
-    with open(os.path.join(script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}"), "w") as f:
+    generated_script = os.path.join(script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}")
+    with open(generated_script, "w") as f:
         f.write(template.render(**variables))
 
+    return generated_script
 
-class DataDownloader(LightningWork):
 
-    def __init__(self):
-        super().__init__(blocking=False)
+class RunGeneratedScript(TracerPythonScript):
 
-        self.done = False
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.script_dir = None
+        self.best_model_path: Optional[Path] = None
 
-    def run(self, root, url):
-        self.done = False
-        download_data(url, root)
-        self.done = True
-
+    def run(self, script_dir: str, run: Dict[str, str]):
+        self.script_path = _generate_script(script_dir, run, f"{run['task']}.jinja", rendering=False)
+        super().run()
+        self.best_model_path = Path(os.path.join(script_dir, f"{run['run_id']}.pt"))
 
 class RunScheduler(LightningFlow):
 
@@ -48,25 +51,17 @@ class RunScheduler(LightningFlow):
         super().__init__()
 
         for idx in range(10):
-            run_work = TracerPythonScript(__file__)
+            run_work = RunGeneratedScript(__file__)
             setattr(self, f"run_work_{idx}", run_work)
 
-        self.data_downloader = DataDownloader()
-
         self.script_dir = None
-
         self.queued_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs = None
 
     def run(self):
         if self.queued_runs:
-            self.data_downloader.run(self.script_dir, self.queued_runs[0]["url"])
-
-        if self.queued_runs and self.data_downloader.done:
             for run in self.queued_runs:
-                _generate_script(self.script_dir, run, f"{run['task']}.jinja", rendering=False)
                 run_work = getattr(self, f"run_work_{run['id']}")
-                run_work.script_path = str(os.path.join(self.script_dir, f"{run['id']}_{run['task']}.py"))
-                run_work.run()
+                run_work.run(self.script_dir, run)
             self.running_runs = self.queued_runs
             self.queued_runs = None

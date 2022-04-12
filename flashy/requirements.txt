@@ -1,0 +1,5 @@
+lightning-flash[image,text]
+fiftyone
+ray[tune]
+streamlit == 1.7.0
+jinja2

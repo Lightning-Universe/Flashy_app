@@ -100,13 +100,17 @@ class HPOManager(LightningFlow):
                 if result[0]["id"] == self.explore_id:
                     run = result[0]
                     break
+
             self.fiftyone_scheduler.run(
                 run,
-                os.path.join(self.run_scheduler.script_dir, f"{self.explore_id}.pt")
+                self.best_model_path
             )
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
+
+    def exposed_url(self, key: str) -> str:
+        return self.fiftyone_scheduler.fiftyone_work.exposed_url(key)
 
 
 @add_flashy_styles

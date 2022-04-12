@@ -13,7 +13,6 @@ class Flashy(LightningFlow):
         super().__init__()
 
         self.script_dir = tempfile.mkdtemp()
-
         self.task_selector: LightningFlow = TaskSelector()
         self.data_manager: LightningFlow = DataManager()
         self.hpo_manager: LightningFlow = HPOManager()
@@ -41,7 +40,7 @@ class Flashy(LightningFlow):
             {"name": "Task", "content": self.task_selector},
             {"name": "Data", "content": self.data_manager},
             {"name": "Model", "content": self.hpo_manager},
-            {"name": "Data Explorer", "content": "http://127.0.0.1:5151"},
+            {"name": "Data Explorer", "content": self.hpo_manager.exposed_url("fiftyone")},
             # {"name": "Swagger UI", "content": "http://127.0.0.1:8000/docs"},
             # {"name": "Demo", "content": self.demo_ui},
         ]

@@ -156,3 +156,4 @@ hymenoptera_data*
 lightning_logs
 
 .storage/
+.vscode
