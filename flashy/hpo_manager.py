@@ -1,23 +1,21 @@
+import os
 import os.path
+import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from ray import tune
 import streamlit as st
+from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
-
-import os
-import sys
 
 sys.path.append(os.path.dirname(__file__))
 
 from fiftyone_scheduler import FiftyOneScheduler
-from run_scheduler import RunScheduler
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
-
+from run_scheduler import RunScheduler
 from utilities import add_flashy_styles
 
 _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
@@ -33,7 +31,7 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
         "state-of-the-art!": {
             "backbone": tune.choice(["resnet101", "efficientnet_b4"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
-        }
+        },
     }
 }
 
@@ -105,7 +103,7 @@ class HPOManager(LightningFlow):
 
             self.fiftyone_scheduler.run(
                 run,
-                getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path
+                getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path,
             )
 
     def configure_layout(self):
@@ -113,7 +111,6 @@ class HPOManager(LightningFlow):
 
     def exposed_url(self, key: str) -> str:
         return self.fiftyone_scheduler.fiftyone_work.exposed_url(key)
-
 
 
 @add_flashy_styles
@@ -135,7 +132,9 @@ def render_fn(state: AppState) -> None:
                 "high": 10,
             }
             state.generated_runs = _generate_runs(
-                performance_runs[performance], state.selected_task, _search_spaces[state.selected_task][quality]
+                performance_runs[performance],
+                state.selected_task,
+                _search_spaces[state.selected_task][quality],
             )
             raise RerunException(RerunData())
 
@@ -163,21 +162,29 @@ def render_fn(state: AppState) -> None:
             def set_explore_id(id):
                 def callback():
                     state.explore_id = id
+
                 return callback
 
             for result in state.results:
                 if state.fiftyone_scheduler.run_id == result[0]["id"]:
                     if state.fiftyone_scheduler.done:
-                        st.write("""
+                        st.write(
+                            """
                             <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                        """, unsafe_allow_html=True)
+                        """,
+                            unsafe_allow_html=True,
+                        )
                     else:
                         with st.spinner("Loading..."):
                             time.sleep(1)
                             raise RerunException(RerunData())
                 else:
                     if result[1] != "Failed":
-                        explore = st.button("Explore!", key=result[0]["id"], on_click=set_explore_id(result[0]["id"]))
+                        explore = st.button(
+                            "Explore!",
+                            key=result[0]["id"],
+                            on_click=set_explore_id(result[0]["id"]),
+                        )
                         if explore:
                             raise RerunException(RerunData())
                     else:
