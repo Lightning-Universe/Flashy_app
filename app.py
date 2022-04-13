@@ -1,9 +1,10 @@
 import tempfile
 
+from lightning import LightningApp, LightningFlow
+
 from flashy.data_manager import DataManager
 from flashy.hpo_manager import HPOManager
 from flashy.task_selector import TaskSelector
-from lightning import LightningApp, LightningFlow
 
 
 class Flashy(LightningFlow):

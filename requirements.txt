@@ -1,6 +1,6 @@
 ray[tune]
-lightning-flash[image,text]
+lightning-flash[image]
 fiftyone
-click=8
+click==8
 streamlit
 jinja2
