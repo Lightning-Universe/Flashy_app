@@ -1,12 +1,10 @@
 from typing import Any, Dict, Optional
 
 import streamlit as st
-from streamlit.script_request_queue import RerunData
-from streamlit.script_runner import RerunException
-
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
+from streamlit.scriptrunner import RerunData, RerunException
 
 from flashy.utilities import add_flashy_styles
 
@@ -38,7 +36,9 @@ def render_fn(state: AppState) -> None:
 
     # TODO: Auto-generate this
     if state.selected_task == "image_classification":
-        state.url = st.text_input("Data URL", "https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip")
+        state.url = st.text_input(
+            "Data URL", "https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip"
+        )
 
         state.method = st.selectbox("Data format", options=["folders", "csv"])
 
@@ -61,11 +61,17 @@ def render_fn(state: AppState) -> None:
     else:
         st.write("Currently only `image_classification` is supported.")
 
-        st.write("""
+        st.write(
+            """
             <a href="http://127.0.0.1:7501/view/Task" target="_parent">Go back</a>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
     if state.config is not None:
-        st.write("""
+        st.write(
+            """
             Now <a href="http://127.0.0.1:7501/view/Model" target="_parent">set-up your model!</a>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )

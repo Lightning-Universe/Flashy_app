@@ -2,17 +2,15 @@ import os.path
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from ray import tune
 import streamlit as st
-from streamlit.script_request_queue import RerunData
-from streamlit.script_runner import RerunException
-
-from flashy.fiftyone import FiftyOneScheduler
-from flashy.run_scheduler import RunScheduler
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
+from ray import tune
+from streamlit.scriptrunner import RerunData, RerunException
 
+from flashy.fiftyone import FiftyOneScheduler
+from flashy.run_scheduler import RunScheduler
 from flashy.utilities import add_flashy_styles
 
 _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
@@ -28,7 +26,7 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
         "state-of-the-art!": {
             "backbone": tune.choice(["resnet101", "efficientnet_b4"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
-        }
+        },
     }
 }
 
@@ -82,11 +80,13 @@ class HPOManager(LightningFlow):
         if self.run_scheduler.running_runs is not None:
             running_runs = []
             for run in self.run_scheduler.running_runs:
-                out_file = os.path.join(self.run_scheduler.script_dir, f"{run['id']}.txt")
+                out_file = os.path.join(
+                    self.run_scheduler.script_dir, f"{run['id']}.txt"
+                )
                 if os.path.exists(out_file):
-                    with open(out_file, 'r') as results:
+                    with open(out_file) as results:
                         monitor = results.read()
-                        monitor = float(monitor.replace('\n', '')) if monitor else 0.0
+                        monitor = float(monitor.replace("\n", "")) if monitor else 0.0
                         self.results.append((run, monitor))
                 elif getattr(self.run_scheduler, f"run_work_{run['id']}").has_failed:
                     self.results.append((run, "Failed"))
@@ -102,7 +102,7 @@ class HPOManager(LightningFlow):
                     break
             self.fiftyone_scheduler.run(
                 run,
-                os.path.join(self.run_scheduler.script_dir, f"{self.explore_id}.pt")
+                os.path.join(self.run_scheduler.script_dir, f"{self.explore_id}.pt"),
             )
 
     def configure_layout(self):
@@ -128,7 +128,9 @@ def render_fn(state: AppState) -> None:
                 "high": 10,
             }
             state.generated_runs = _generate_runs(
-                performance_runs[performance], state.selected_task, _search_spaces[state.selected_task][quality]
+                performance_runs[performance],
+                state.selected_task,
+                _search_spaces[state.selected_task][quality],
             )
             raise RerunException(RerunData())
 
@@ -156,21 +158,29 @@ def render_fn(state: AppState) -> None:
             def set_explore_id(id):
                 def callback():
                     state.explore_id = id
+
                 return callback
 
             for result in state.results:
                 if state.fiftyone_scheduler.run_id == result[0]["id"]:
                     if state.fiftyone_scheduler.done:
-                        st.write("""
+                        st.write(
+                            """
                             <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                        """, unsafe_allow_html=True)
+                        """,
+                            unsafe_allow_html=True,
+                        )
                     else:
                         with st.spinner("Loading..."):
                             time.sleep(1)
                             raise RerunException(RerunData())
                 else:
                     if result[1] != "Failed":
-                        explore = st.button("Explore!", key=result[0]["id"], on_click=set_explore_id(result[0]["id"]))
+                        explore = st.button(
+                            "Explore!",
+                            key=result[0]["id"],
+                            on_click=set_explore_id(result[0]["id"]),
+                        )
                         if explore:
                             raise RerunException(RerunData())
                     else:
