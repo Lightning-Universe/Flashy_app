@@ -42,12 +42,12 @@ class Flashy(LightningFlow):
     def configure_layout(self):
         return [
             {"name": "Task", "content": self.task_selector},
-            {"name": "Data", "content": self.data_manager},
-            {"name": "Model", "content": self.hpo_manager},
-            {
-                "name": "Data Explorer",
-                "content": self.hpo_manager.exposed_url("fiftyone"),
-            },
+            # {"name": "Data", "content": self.data_manager},
+            # {"name": "Model", "content": self.hpo_manager},
+            # {
+            #     "name": "Data Explorer",
+            #     "content": self.hpo_manager.exposed_url("fiftyone"),
+            # },
             # {"name": "Swagger UI", "content": "http://127.0.0.1:8000/docs"},
             # {"name": "Demo", "content": self.demo_ui},
         ]

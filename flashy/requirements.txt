@@ -1,6 +1,6 @@
-ray
 ray[tune]
 lightning-flash[image,text]
 fiftyone
-streamlit == 1.7.0
+click=8
+streamlit
 jinja2

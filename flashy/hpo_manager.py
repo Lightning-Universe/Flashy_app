@@ -6,8 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import streamlit as st
 from ray import tune
-from streamlit.script_request_queue import RerunData
-from streamlit.script_runner import RerunException
+from streamlit.scriptrunner import RerunData, RerunException
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -106,8 +105,8 @@ class HPOManager(LightningFlow):
                 getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path,
             )
 
-    def configure_layout(self):
-        return StreamlitFrontend(render_fn=render_fn)
+    # def configure_layout(self):
+    #     return StreamlitFrontend(render_fn=render_fn)
 
     def exposed_url(self, key: str) -> str:
         return self.fiftyone_scheduler.fiftyone_work.exposed_url(key)

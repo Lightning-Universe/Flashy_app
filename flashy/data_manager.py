@@ -6,8 +6,7 @@ import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
-from streamlit.script_request_queue import RerunData
-from streamlit.script_runner import RerunException
+from streamlit.scriptrunner import RerunData, RerunException
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -31,8 +30,8 @@ class DataManager(LightningFlow):
     def run(self, selected_task: str):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
-    def configure_layout(self):
-        return StreamlitFrontend(render_fn=render_fn)
+    # def configure_layout(self):
+    #     return StreamlitFrontend(render_fn=render_fn)
 
 
 @add_flashy_styles
