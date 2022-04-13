@@ -1,5 +1,5 @@
 ray[tune]
-lightning-flash[image]
+lightning-flash[image, text]
 fiftyone
 click==8
 streamlit
