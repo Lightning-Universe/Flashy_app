@@ -9,6 +9,7 @@
 ## Running the app
 
 To run the app, execute the following commands:
+
 ```bash
 conda create --name automl python=3.8
 conda activate automl

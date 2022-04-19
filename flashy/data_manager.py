@@ -4,7 +4,6 @@ import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
-from streamlit.scriptrunner import RerunData, RerunException
 
 from flashy.utilities import add_flashy_styles
 

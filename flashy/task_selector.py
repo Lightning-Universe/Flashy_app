@@ -1,14 +1,13 @@
 import functools
 
 import streamlit as st
-from sentence_transformers import util
 import torch
-from flash.text import TextEmbedder, TextClassificationData
 from flash import Trainer
-
+from flash.text import TextClassificationData, TextEmbedder
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
+from sentence_transformers import util
 
 from flashy.utilities import add_flashy_styles
 
@@ -53,14 +52,22 @@ def get_suggested_tasks(question):
     cos_scores = util.cos_sim(query_embedding, embeddings["corpus_embeddings"])[0]
     top_results = torch.topk(cos_scores, k=cos_scores.size(-1))
 
-    return list({embeddings["task_mapping"][int(result.item())]: None for result in top_results.indices}.keys())[:3]
+    return list(
+        {
+            embeddings["task_mapping"][int(result.item())]: None
+            for result in top_results.indices
+        }.keys()
+    )[:3]
 
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
     st.write("![logo](https://grid-hackthon.s3.amazonaws.com/flashy/logo.png)")
 
-    st.markdown('<p style="font-family:Courier; font-size: 25px;">What do you want to build?</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p style="font-family:Courier; font-size: 25px;">What do you want to build?</p>',
+        unsafe_allow_html=True,
+    )
 
     question = st.text_input(
         "",
@@ -74,9 +81,17 @@ def render_fn(state: AppState) -> None:
         suggested_tasks = []
 
     if suggested_tasks:
-        st.markdown('<p style="font-family:Courier; font-size: 20px;">Suggested tasks</p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p style="font-family:Courier; font-size: 20px;">Suggested tasks</p>',
+            unsafe_allow_html=True,
+        )
         state.selected_task = st.radio("", suggested_tasks)
 
-        st.write("""
+        st.write(state._urls)
+
+        st.write(
+            """
             Now <a href="http://127.0.0.1:7501/view/Data" target="_parent">configure your data!</a>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )

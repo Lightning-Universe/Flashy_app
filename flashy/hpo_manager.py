@@ -1,4 +1,3 @@
-import os.path
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -7,9 +6,10 @@ from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 from ray import tune
-from streamlit.scriptrunner import RerunData, RerunException
+from streamlit.script_request_queue import RerunData
+from streamlit.script_runner import RerunException
 
-from flashy.fiftyone import FiftyOneScheduler
+from flashy.fiftyone_scheduler import FiftyOneScheduler
 from flashy.run_scheduler import RunScheduler
 from flashy.utilities import add_flashy_styles
 
@@ -80,15 +80,10 @@ class HPOManager(LightningFlow):
         if self.run_scheduler.running_runs is not None:
             running_runs = []
             for run in self.run_scheduler.running_runs:
-                out_file = os.path.join(
-                    self.run_scheduler.script_dir, f"{run['id']}.txt"
-                )
-                if os.path.exists(out_file):
-                    with open(out_file) as results:
-                        monitor = results.read()
-                        monitor = float(monitor.replace("\n", "")) if monitor else 0.0
-                        self.results.append((run, monitor))
-                elif getattr(self.run_scheduler, f"run_work_{run['id']}").has_failed:
+                run_work = getattr(self.run_scheduler, f"run_work_{run['id']}")
+                if run_work.has_succeeded:
+                    self.results.append((run, run_work.monitor))
+                elif run_work.has_failed:
                     self.results.append((run, "Failed"))
                 else:
                     running_runs.append(run)
@@ -100,13 +95,17 @@ class HPOManager(LightningFlow):
                 if result[0]["id"] == self.explore_id:
                     run = result[0]
                     break
+
             self.fiftyone_scheduler.run(
                 run,
-                os.path.join(self.run_scheduler.script_dir, f"{self.explore_id}.pt"),
+                getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path,
             )
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
+
+    def exposed_url(self, key: str) -> str:
+        return self.fiftyone_scheduler.fiftyone_work.exposed_url(key)
 
 
 @add_flashy_styles

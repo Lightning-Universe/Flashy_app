@@ -2,5 +2,5 @@ ray[tune]
 lightning-flash[image, text]
 fiftyone
 click==8
-streamlit
+streamlit==1.6.0
 jinja2

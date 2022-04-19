@@ -1,13 +1,12 @@
 import functools
 
 import streamlit as st
-
 from lightning.utilities.state import AppState
 
 
 def set_bg():
     st.markdown(
-         f"""
+        f"""
          <style>
          .stApp {{
              background: url(https://grid-hackthon.s3.amazonaws.com/flashy/background.png);
@@ -15,8 +14,8 @@ def set_bg():
          }}
          </style>
          """,
-         unsafe_allow_html=True
-     )
+        unsafe_allow_html=True,
+    )
 
 
 def add_flashy_styles(render_fn):
@@ -36,7 +35,8 @@ def add_flashy_styles(render_fn):
              }}
              </style>
              """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
         render_fn(state)
+
     return decorator
