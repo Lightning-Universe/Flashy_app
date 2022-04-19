@@ -76,6 +76,7 @@ class RunScheduler(LightningFlow):
     def run(self):
         if self.queued_runs:
             for run in self.queued_runs:
+                print(f"Launching {run['id']}")
                 run_work = getattr(self, f"run_work_{run['id']}")
                 run_work.run(self.script_dir, run)
             self.running_runs = self.queued_runs
