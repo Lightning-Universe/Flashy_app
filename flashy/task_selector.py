@@ -87,8 +87,6 @@ def render_fn(state: AppState) -> None:
         )
         state.selected_task = st.radio("", suggested_tasks)
 
-        st.write(state._urls)
-
         st.write(
             """
             Now <a href="http://127.0.0.1:7501/view/Data" target="_parent">configure your data!</a>
