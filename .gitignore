@@ -158,3 +158,5 @@ lightning_logs
 .storage/
 .vscode
 lightning-*.tar.gz
+
+.DS_Store

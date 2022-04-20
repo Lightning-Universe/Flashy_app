@@ -9,9 +9,9 @@ from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
 
-from flashy.fiftyone_scheduler import FiftyOneScheduler
-from flashy.run_scheduler import RunScheduler
-from flashy.utilities import add_flashy_styles
+from fiftyone_scheduler import FiftyOneScheduler
+from run_scheduler import RunScheduler
+from utilities import add_flashy_styles
 
 _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
     "image_classification": {

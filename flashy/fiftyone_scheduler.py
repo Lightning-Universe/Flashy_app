@@ -6,7 +6,7 @@ from flash.core.integrations.fiftyone import visualize
 from lightning import LightningFlow, LightningWork
 from lightning.components.python import TracerPythonScript
 
-from flashy.run_scheduler import _generate_script
+from run_scheduler import _generate_script
 
 
 class FiftyOneLauncher(LightningWork):
