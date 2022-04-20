@@ -18,8 +18,8 @@ class Flashy(LightningFlow):
 
         # self.script_dir = tempfile.mkdtemp()
         self.task_selector: LightningFlow = TaskSelector()
-        self.data_manager: LightningFlow = DataManager()
-        self.hpo_manager: LightningFlow = HPOManager()
+        self.data: LightningFlow = DataManager()
+        self.hpo: LightningFlow = HPOManager()
         #
         # self.hpo_manager.run_scheduler.script_dir = self.script_dir
         # self.hpo_manager.fiftyone_scheduler.script_dir = self.script_dir
@@ -29,21 +29,21 @@ class Flashy(LightningFlow):
 
         if self.task_selector.selected_task is not None:
             selected_task = self.task_selector.selected_task
-            self.data_manager.run(selected_task)
+            self.data.run(selected_task)
 
-            if self.data_manager.config is not None:
-                self.hpo_manager.run(
-                    self.data_manager.selected_task,
-                    self.data_manager.url,
-                    self.data_manager.method,
-                    self.data_manager.config,
+            if self.data.config is not None:
+                self.hpo.run(
+                    self.data.selected_task,
+                    self.data.url,
+                    self.data.method,
+                    self.data.config,
                 )
 
     def configure_layout(self):
         return [
             {"name": "Task", "content": self.task_selector},
-            {"name": "Data", "content": self.data_manager},
-            {"name": "Model", "content": self.hpo_manager},
+            {"name": "Data", "content": self.data},
+            {"name": "Model", "content": self.hpo},
             # {
             #     "name": "Data Explorer",
             #     "content": self.hpo_manager.exposed_url("fiftyone"),

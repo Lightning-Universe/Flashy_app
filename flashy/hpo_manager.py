@@ -57,7 +57,7 @@ class HPOManager(LightningFlow):
 
         self.explore_id: Optional[str] = None
 
-        self.run_scheduler: LightningFlow = RunScheduler()
+        self.runs: LightningFlow = RunScheduler()
 
         # self.fiftyone_scheduler = FiftyOneScheduler()
 
@@ -74,7 +74,7 @@ class HPOManager(LightningFlow):
                 run["method"] = method
                 run["data_config"] = data_config
             logging.info(f"Running: {runs}")
-            self.run_scheduler.run(runs)
+            self.runs.run(runs)
             self.generated_runs = None
 
             for run in runs:
@@ -84,7 +84,7 @@ class HPOManager(LightningFlow):
         #     running_runs = []
         for result in self.results.values():
             run = result[0]
-            run_work = getattr(self.run_scheduler, f"run_work_{run['id']}")
+            run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
                 self.results[run['id']] = (run, run_work.monitor)
             elif run_work.has_failed:
