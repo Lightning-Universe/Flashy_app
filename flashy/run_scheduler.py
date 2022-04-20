@@ -50,9 +50,11 @@ class RunGeneratedScript(TracerPythonScript):
     def run(self, script_dir: str, run_dict: Dict[str, str]):
         self.script_dir = script_dir
         self.run_dict = run_dict
+        print(f"Generating script in: {script_dir}")
         self.script_path = _generate_script(
             script_dir, run_dict, f"{run_dict['task']}.jinja", rendering=False
         )
+        print(f"Running script: {self.script_path}")
         super().run()
 
     def on_after_run(self, res):

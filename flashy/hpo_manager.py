@@ -137,19 +137,20 @@ def render_fn(state: AppState) -> None:
     st.write("## Results")
 
     if state.results:
-        columns = st.columns(len(state.results[0][0]["model_config"].keys()) + 2)
+        keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
+        columns = st.columns(len(keys) + 2)
 
-        for idx, key in enumerate(state.results[0][0]["model_config"].keys()):
+        for idx, key in enumerate(keys):
             with columns[idx]:
                 st.write(f"### {key}")
 
-                for result in state.results:
+                for result in state.results.values():
                     st.write(result[0]["model_config"][key])
 
         with columns[-2]:
             st.write("### performance")
 
-            for result in state.results:
+            for result in state.results.values():
                 st.write(result[1])
 
         with columns[-1]:
@@ -161,7 +162,7 @@ def render_fn(state: AppState) -> None:
             #
             #     return callback
 
-            for result in state.results:
+            for result in state.results.values():
                 st.write("---")
                 # if state.fiftyone_scheduler.run_id == result[0]["id"]:
                 #     if state.fiftyone_scheduler.done:
