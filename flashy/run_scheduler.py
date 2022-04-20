@@ -1,6 +1,6 @@
+import functools
 import os
 import os.path
-import sys
 from typing import Any, Dict, List, Optional
 
 from jinja2 import Environment, FileSystemLoader
@@ -8,16 +8,16 @@ from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
 from lightning.storage.path import Path
 
-sys.path.append(os.path.dirname(__file__))
 
-
-env = Environment(
-    loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates"))
-)
+@functools.lru_cache
+def _get_env():
+    return Environment(
+        loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates"))
+    )
 
 
 def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -> str:
-    template = env.get_template(os.path.join(template_file))
+    template = _get_env().get_template(os.path.join(template_file))
 
     variables = {
         "root": script_dir,
@@ -33,6 +33,7 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -
         script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}"
     )
     with open(generated_script, "w") as f:
+        print(f"Rendering {template_file} with variables: {variables}")
         f.write(template.render(**variables))
 
     return generated_script
@@ -75,9 +76,10 @@ class RunScheduler(LightningFlow):
 
     def run(self):
         if self.queued_runs:
+            print(f"Queued runs: {self.queued_runs}")
             for run in self.queued_runs:
-                print(f"Launching {run['id']}")
                 run_work = getattr(self, f"run_work_{run['id']}")
+                print(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
                 run_work.run(self.script_dir, run)
             self.running_runs = self.queued_runs
             self.queued_runs = None

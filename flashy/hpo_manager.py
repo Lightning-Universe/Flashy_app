@@ -72,6 +72,7 @@ class HPOManager(LightningFlow):
                 run["url"] = url
                 run["method"] = method
                 run["data_config"] = data_config
+            print(f"Queueing runs: {runs}")
             self.run_scheduler.queued_runs = runs
             self.generated_runs = None
 
@@ -126,6 +127,7 @@ def render_fn(state: AppState) -> None:
                 "medium": 10,
                 "high": 10,
             }
+            print("Generating runs!")
             state.generated_runs = _generate_runs(
                 performance_runs[performance],
                 state.selected_task,
