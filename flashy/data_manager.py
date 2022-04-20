@@ -31,7 +31,7 @@ class DataManager(LightningFlow):
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
-    st.title("Load your data!")
+    st.title(f"Load your data! {state.selected_task}")
 
     # TODO: Auto-generate this
     if state.selected_task == "image_classification":
