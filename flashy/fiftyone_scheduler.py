@@ -3,55 +3,43 @@ from typing import Any, Dict
 
 import torch
 from flash.core.integrations.fiftyone import visualize
-from lightning import LightningFlow, LightningWork
+from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
+from lightning.storage.path import Path
 
 from flashy.run_scheduler import _generate_script
 
 
-class FiftyOneLauncher(LightningWork):
+class FiftyOneTemplateTracer(TracerPythonScript):
     def __init__(self):
-        super().__init__(blocking=True, exposed_ports={"fiftyone": 5151})
+        super().__init__(__file__, blocking=False, exposed_ports={"fiftyone": 5151})
+
         self._session = None
 
-    def run(self, predictions_path: str, root: str):
+    def run(self, run: Dict[str, Any], checkpoint: str):
+        self.script_path = _generate_script(
+            ".", run, f"{run['task']}_fiftyone.jinja", checkpoint=checkpoint
+        )
+        super().run()
+
+    def on_after_run(self, res):
+        predictions_path = os.path.join(".", f"{self.run_dict['id']}_predictions.pt")
+
         if self._session is not None:
             self._session.close()
         predictions = torch.load(predictions_path)
 
-        os.chdir(root)
         self._session = visualize(predictions, wait=False, remote=True)
-
-
-class FiftyOneTemplateTracer(TracerPythonScript):
-    def __init__(self):
-        super().__init__(__file__, blocking=True)
-
-    def run(self, run: Dict[str, Any], checkpoint: str, script_dir: str):
-        self.script_path = _generate_script(
-            script_dir, run, f"{run['task']}_fiftyone.jinja", checkpoint=checkpoint
-        )
-        super().run()
 
 
 class FiftyOneScheduler(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        self.run_work = FiftyOneTemplateTracer()
-        self.fiftyone_work = FiftyOneLauncher()
+        self.work = FiftyOneTemplateTracer()
 
-        self.script_dir = None
         self.run_id = None
-        self.done = False
 
-    def run(self, run: Dict[str, Any], checkpoint: str):
-        self.done = False
-        # os.system(f"kill -9 $(ps -A | grep {self.run_work.script_path} " + "| awk '{print $1}')")
+    def run(self, run: Dict[str, Any], checkpoint: Path):
         self.run_id = run["id"]
-        self.run_work.run(run, checkpoint, self.script_dir)
-
-        predictions_path = os.path.join(self.script_dir, f"{run['id']}_predictions.pt")
-        if os.path.exists(predictions_path) and self.run_work.has_succeeded:
-            self.fiftyone_work.run(predictions_path, self.script_dir)
-        self.done = True
+        self.work.run(run, checkpoint)

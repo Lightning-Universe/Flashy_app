@@ -42,7 +42,7 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -
 
 class RunGeneratedScript(TracerPythonScript):
     def __init__(self, **kwargs):
-        super().__init__(__file__, raise_exception=True, **kwargs)
+        super().__init__(__file__, blocking=False, raise_exception=True, **kwargs)
         self.script_dir = None
         self.run_dict = None
         self.best_model_path: Optional[Path] = None

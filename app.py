@@ -44,10 +44,10 @@ class Flashy(LightningFlow):
             {"name": "Task", "content": self.task_selector},
             {"name": "Data", "content": self.data},
             {"name": "Model", "content": self.hpo},
-            # {
-            #     "name": "Data Explorer",
-            #     "content": self.hpo_manager.exposed_url("fiftyone"),
-            # },
+            {
+                "name": "Data Explorer",
+                "content": self.hpo.exposed_url("fiftyone"),
+            },
         ]
 
 

@@ -59,7 +59,7 @@ class HPOManager(LightningFlow):
 
         self.runs: LightningFlow = RunScheduler()
 
-        # self.fiftyone_scheduler = FiftyOneScheduler()
+        self.fo = FiftyOneScheduler()
 
         self.results: Dict[int, Tuple[Dict[str, Any], float]] = {}
 
@@ -90,23 +90,23 @@ class HPOManager(LightningFlow):
             elif run_work.has_started:
                 self.results[run['id']] = (run, "started")
 
-        # if self.explore_id is not None:
-        #     run = None
-        #     for result in self.results:
-        #         if result[0]["id"] == self.explore_id:
-        #             run = result[0]
-        #             break
-        #
-        #     self.fiftyone_scheduler.run(
-        #         run,
-        #         getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path,
-        #     )
+        if self.explore_id is not None:
+            run = None
+            for result in self.results.values():
+                if result[0]["id"] == self.explore_id:
+                    run = result[0]
+                    break
+
+            self.fiftyone_scheduler.run(
+                run,
+                getattr(self.run_scheduler, f"work_{run['id']}").best_model_path,
+            )
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
 
     def exposed_url(self, key: str) -> str:
-        return self.fiftyone_scheduler.fiftyone_work.exposed_url(key)
+        return self.fo.work.exposed_url(key)
 
 
 @add_flashy_styles
@@ -149,7 +149,7 @@ def render_fn(state: AppState) -> None:
                     st.write(result[0]["model_config"][key])
 
         with columns[-2]:
-            st.write("### performance")
+            st.write("### Performance")
 
             for result in state.results.values():
                 if result[1] == "launching":
@@ -164,39 +164,38 @@ def render_fn(state: AppState) -> None:
                     st.write(result[1])
 
         with columns[-1]:
-            st.write("### ---")
+            st.write("### FiftyOne")
 
-            # def set_explore_id(id):
-            #     def callback():
-            #         state.explore_id = id
-            #
-            #     return callback
+            def set_explore_id(id):
+                def callback():
+                    state.explore_id = id
+
+                return callback
 
             for result in state.results.values():
-                st.write("Not Supported")
-                # if state.fiftyone_scheduler.run_id == result[0]["id"]:
-                #     if state.fiftyone_scheduler.done:
-                #         st.write(
-                #             """
-                #             <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                #         """,
-                #             unsafe_allow_html=True,
-                #         )
-                #     else:
-                #         with st.spinner("Loading..."):
-                #             time.sleep(1)
-                #             raise RerunException(RerunData())
-                # else:
-                #     if result[1] != "Failed":
-                #         explore = st.button(
-                #             "Explore!",
-                #             key=result[0]["id"],
-                #             on_click=set_explore_id(result[0]["id"]),
-                #         )
-                #         if explore:
-                #             raise RerunException(RerunData())
-                #     else:
-                #         st.write("Failed")
+                if state.fo.run_id == result[0]["id"]:
+                    if state.fo.work.has_succeeded:
+                        st.write(
+                            """
+                            <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
+                        """,
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        spinner_context = st.spinner("Loading...")
+                        spinner_context.__enter__()
+                        spinners.append(spinner_context)
+                else:
+                    if result[1] != "Failed":
+                        explore = st.button(
+                            "Explore!",
+                            key=result[0]["id"],
+                            on_click=set_explore_id(result[0]["id"]),
+                        )
+                        if explore:
+                            raise RerunException(RerunData())
+                    else:
+                        st.write("Failed")
 
         if spinners:
             time.sleep(2)
