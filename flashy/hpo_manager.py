@@ -1,5 +1,6 @@
 import time
 from typing import Any, Dict, List, Optional, Tuple
+import logging
 
 import streamlit as st
 from lightning import LightningFlow
@@ -72,7 +73,7 @@ class HPOManager(LightningFlow):
                 run["url"] = url
                 run["method"] = method
                 run["data_config"] = data_config
-            print(f"Running: {runs}")
+            logging.info(f"Running: {runs}")
             self.run_scheduler.run(runs)
             self.generated_runs = None
 
@@ -130,7 +131,6 @@ def render_fn(state: AppState) -> None:
                 "medium": 1,
                 "high": 1,
             }
-            print("Generating runs!")
             state.generated_runs = _generate_runs(
                 performance_runs[performance],
                 state.selected_task,

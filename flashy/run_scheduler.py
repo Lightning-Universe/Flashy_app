@@ -2,6 +2,7 @@ import functools
 import os
 import os.path
 from typing import Any, Dict, List, Optional
+import logging
 
 from jinja2 import Environment, FileSystemLoader
 from lightning import LightningFlow, LightningWork
@@ -33,7 +34,7 @@ def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -
         script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}"
     )
     with open(generated_script, "w") as f:
-        print(f"Rendering {template_file} with variables: {variables}")
+        logging.info(f"Rendering {template_file} with variables: {variables}")
         f.write(template.render(**variables))
 
     return generated_script
@@ -89,9 +90,9 @@ class RunScheduler(LightningFlow):
         # self.running_runs = None
 
     def run(self, queued_runs: Optional[List[Dict[str, Any]]]):
-        print(f"Queued runs: {queued_runs}")
+        logging.info(f"Queued runs: {queued_runs}")
         for run in queued_runs:
             run_work = getattr(self, f"run_work_{run['id']}")
-            print(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
+            logging.info(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
             run_work.run(".", run)
         # self.running_runs = queued_runs
