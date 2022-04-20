@@ -1,4 +1,5 @@
 import time
+from copy import copy
 from typing import Any, Dict, List, Optional, Tuple
 import logging
 
@@ -80,7 +81,7 @@ class HPOManager(LightningFlow):
             for run in runs:
                 self.results[run['id']] = (run, "launching")
 
-        for result in self.results.values():
+        for result in copy(self.results).values():
             run = result[0]
             run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
@@ -90,17 +91,8 @@ class HPOManager(LightningFlow):
             elif run_work.has_started:
                 self.results[run['id']] = (run, "started")
 
-        if self.explore_id is not None:
-            run = None
-            for result in self.results.values():
-                if result[0]["id"] == self.explore_id:
-                    run = result[0]
-                    break
-
-            self.fiftyone_scheduler.run(
-                run,
-                getattr(self.run_scheduler, f"work_{run['id']}").best_model_path,
-            )
+            if self.explore_id is not None and run["id"] == self.explore_id:
+                self.fo.run(run, run_work.best_model_path)
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
@@ -174,7 +166,7 @@ def render_fn(state: AppState) -> None:
 
             for result in state.results.values():
                 if state.fo.run_id == result[0]["id"]:
-                    if state.fo.work.has_succeeded:
+                    if state.fo.ready:
                         st.write(
                             """
                             <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
@@ -186,7 +178,11 @@ def render_fn(state: AppState) -> None:
                         spinner_context.__enter__()
                         spinners.append(spinner_context)
                 else:
-                    if result[1] != "Failed":
+                    if result[1] == "Failed":
+                        st.write("Failed")
+                    elif result[1] in ["launching", "started"]:
+                        st.write("Waiting")
+                    else:
                         explore = st.button(
                             "Explore!",
                             key=result[0]["id"],
@@ -194,8 +190,6 @@ def render_fn(state: AppState) -> None:
                         )
                         if explore:
                             raise RerunException(RerunData())
-                    else:
-                        st.write("Failed")
 
         if spinners:
             time.sleep(2)

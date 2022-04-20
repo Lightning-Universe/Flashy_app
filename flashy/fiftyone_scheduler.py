@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, Dict
 
@@ -12,7 +13,7 @@ from flashy.run_scheduler import _generate_script
 
 class FiftyOneTemplateTracer(TracerPythonScript):
     def __init__(self):
-        super().__init__(__file__, blocking=False, exposed_ports={"fiftyone": 5151})
+        super().__init__(__file__, blocking=True, run_once=False, exposed_ports={"fiftyone": 5151})
 
         self._session = None
 
@@ -23,13 +24,16 @@ class FiftyOneTemplateTracer(TracerPythonScript):
         super().run()
 
     def on_after_run(self, res):
-        predictions_path = os.path.join(".", f"{self.run_dict['id']}_predictions.pt")
+        logging.info("Launching FiftyOne")
 
         if self._session is not None:
             self._session.close()
-        predictions = torch.load(predictions_path)
+
+        predictions = res["predictions"]
 
         self._session = visualize(predictions, wait=False, remote=True)
+
+        logging.info("Launched")
 
 
 class FiftyOneScheduler(LightningFlow):
@@ -39,7 +43,14 @@ class FiftyOneScheduler(LightningFlow):
         self.work = FiftyOneTemplateTracer()
 
         self.run_id = None
+        self.ready = False
 
     def run(self, run: Dict[str, Any], checkpoint: Path):
-        self.run_id = run["id"]
-        self.work.run(run, checkpoint)
+        self.ready = False
+
+        if run["id"] != self.run_id:
+            self.run_id = run["id"]
+            self.work.run(run, checkpoint)
+
+        if self.work.has_succeeded:
+            self.ready = True
