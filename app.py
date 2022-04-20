@@ -51,4 +51,4 @@ class Flashy(LightningFlow):
         ]
 
 
-app = LightningApp(Flashy())
+app = LightningApp(Flashy(), debug=True)
