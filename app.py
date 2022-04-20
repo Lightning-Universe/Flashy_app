@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
 import tempfile
 
 from lightning import LightningApp, LightningFlow
@@ -5,7 +9,6 @@ from lightning import LightningApp, LightningFlow
 from flashy.data_manager import DataManager
 from flashy.hpo_manager import HPOManager
 from flashy.task_selector import TaskSelector
-
 
 class Flashy(LightningFlow):
     """The root flow for the `Flashy` app."""

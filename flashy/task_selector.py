@@ -9,7 +9,7 @@ from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 from sentence_transformers import util
 
-from utilities import add_flashy_styles
+from flashy.utilities import add_flashy_styles
 
 
 @functools.lru_cache()

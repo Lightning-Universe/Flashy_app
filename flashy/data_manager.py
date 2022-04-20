@@ -5,7 +5,7 @@ from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
-from utilities import add_flashy_styles
+from flashy.utilities import add_flashy_styles
 
 
 class DataManager(LightningFlow):
