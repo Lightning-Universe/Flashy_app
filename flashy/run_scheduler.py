@@ -66,20 +66,19 @@ class RunScheduler(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        for idx in range(10):
-            run_work = RunGeneratedScript(__file__)
-            setattr(self, f"run_work_{idx}", run_work)
+        self.run_work_0 = RunGeneratedScript(__file__)
 
-        self.script_dir = None
-        self.queued_runs: Optional[List[Dict[str, Any]]] = None
-        self.running_runs = None
+        # for idx in range(10):
+        #     run_work = RunGeneratedScript(__file__)
+        #     setattr(self, f"run_work_{idx}", run_work)
 
-    def run(self):
-        if self.queued_runs:
-            print(f"Queued runs: {self.queued_runs}")
-            for run in self.queued_runs:
-                run_work = getattr(self, f"run_work_{run['id']}")
-                print(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
-                run_work.run(self.script_dir, run)
-            self.running_runs = self.queued_runs
-            self.queued_runs = None
+        # self.script_dir = None
+        # self.running_runs = None
+
+    def run(self, queued_runs: Optional[List[Dict[str, Any]]]):
+        print(f"Queued runs: {queued_runs}")
+        for run in queued_runs:
+            run_work = getattr(self, f"run_work_{run['id']}")
+            print(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
+            run_work.run(".", run)
+        # self.running_runs = queued_runs

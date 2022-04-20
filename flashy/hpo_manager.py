@@ -58,9 +58,9 @@ class HPOManager(LightningFlow):
 
         self.run_scheduler: LightningFlow = RunScheduler()
 
-        self.fiftyone_scheduler = FiftyOneScheduler()
+        # self.fiftyone_scheduler = FiftyOneScheduler()
 
-        self.results: List[Tuple[Dict[str, Any], float]] = []
+        self.results: Dict[int, Tuple[Dict[str, Any], float]] = {}
 
     def run(self, selected_task: str, url, method, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
@@ -72,35 +72,34 @@ class HPOManager(LightningFlow):
                 run["url"] = url
                 run["method"] = method
                 run["data_config"] = data_config
-            print(f"Queueing runs: {runs}")
-            self.run_scheduler.queued_runs = runs
+            print(f"Running: {runs}")
+            self.run_scheduler.run(runs)
             self.generated_runs = None
 
-        self.run_scheduler.run()
-
-        if self.run_scheduler.running_runs is not None:
-            running_runs = []
-            for run in self.run_scheduler.running_runs:
+        # if self.run_scheduler.running_runs is not None:
+        #     running_runs = []
+            for run in runs:
                 run_work = getattr(self.run_scheduler, f"run_work_{run['id']}")
                 if run_work.has_succeeded:
-                    self.results.append((run, run_work.monitor))
+                    self.results[run['id']] = (run, run_work.monitor)
                 elif run_work.has_failed:
-                    self.results.append((run, "Failed"))
+                    self.results[run['id']] = (run, "Failed")
                 else:
-                    running_runs.append(run)
-                self.run_scheduler.running_runs = running_runs
+                    self.results[run['id']] = (run, "Running")
+                    # running_runs.append(run)
+                # self.run_scheduler.running_runs = []
 
-        if self.explore_id is not None:
-            run = None
-            for result in self.results:
-                if result[0]["id"] == self.explore_id:
-                    run = result[0]
-                    break
-
-            self.fiftyone_scheduler.run(
-                run,
-                getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path,
-            )
+        # if self.explore_id is not None:
+        #     run = None
+        #     for result in self.results:
+        #         if result[0]["id"] == self.explore_id:
+        #             run = result[0]
+        #             break
+        #
+        #     self.fiftyone_scheduler.run(
+        #         run,
+        #         getattr(self.run_scheduler, f"run_work_{run['id']}").best_model_path,
+        #     )
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
@@ -124,8 +123,8 @@ def render_fn(state: AppState) -> None:
             # TODO: Currently medium == high but should be changed when dynamic works are supported
             performance_runs = {
                 "low": 1,
-                "medium": 10,
-                "high": 10,
+                "medium": 1,
+                "high": 1,
             }
             print("Generating runs!")
             state.generated_runs = _generate_runs(
@@ -156,38 +155,39 @@ def render_fn(state: AppState) -> None:
         with columns[-1]:
             st.write("### ---")
 
-            def set_explore_id(id):
-                def callback():
-                    state.explore_id = id
-
-                return callback
+            # def set_explore_id(id):
+            #     def callback():
+            #         state.explore_id = id
+            #
+            #     return callback
 
             for result in state.results:
-                if state.fiftyone_scheduler.run_id == result[0]["id"]:
-                    if state.fiftyone_scheduler.done:
-                        st.write(
-                            """
-                            <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                        """,
-                            unsafe_allow_html=True,
-                        )
-                    else:
-                        with st.spinner("Loading..."):
-                            time.sleep(1)
-                            raise RerunException(RerunData())
-                else:
-                    if result[1] != "Failed":
-                        explore = st.button(
-                            "Explore!",
-                            key=result[0]["id"],
-                            on_click=set_explore_id(result[0]["id"]),
-                        )
-                        if explore:
-                            raise RerunException(RerunData())
-                    else:
-                        st.write("Failed")
+                st.write("---")
+                # if state.fiftyone_scheduler.run_id == result[0]["id"]:
+                #     if state.fiftyone_scheduler.done:
+                #         st.write(
+                #             """
+                #             <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
+                #         """,
+                #             unsafe_allow_html=True,
+                #         )
+                #     else:
+                #         with st.spinner("Loading..."):
+                #             time.sleep(1)
+                #             raise RerunException(RerunData())
+                # else:
+                #     if result[1] != "Failed":
+                #         explore = st.button(
+                #             "Explore!",
+                #             key=result[0]["id"],
+                #             on_click=set_explore_id(result[0]["id"]),
+                #         )
+                #         if explore:
+                #             raise RerunException(RerunData())
+                #     else:
+                #         st.write("Failed")
 
-    if state.run_scheduler.running_runs or state.run_scheduler.queued_runs:
-        with st.spinner("Training..."):
-            time.sleep(2)
-            raise RerunException(RerunData())
+    # if state.run_scheduler.running_runs:  # or state.run_scheduler.queued_runs:
+    #     with st.spinner("Training..."):
+    #         time.sleep(2)
+    #         raise RerunException(RerunData())
