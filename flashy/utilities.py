@@ -33,6 +33,12 @@ def add_flashy_styles(render_fn):
                 font-size: 100%;
                 font-family: Courier;
              }}
+             .stSpinner .st-c5 {{
+                height: 25.59px !important;
+             }}
+             .stSpinner .st-c4 {{
+                width: 25.59px !important;
+             }}
              </style>
              """,
             unsafe_allow_html=True,

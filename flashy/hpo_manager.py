@@ -78,10 +78,8 @@ class HPOManager(LightningFlow):
             self.generated_runs = None
 
             for run in runs:
-                self.results[run['id']] = (run, "Launching")
+                self.results[run['id']] = (run, "launching")
 
-        # if self.run_scheduler.running_runs is not None:
-        #     running_runs = []
         for result in self.results.values():
             run = result[0]
             run_work = getattr(self.runs, f"work_{run['id']}")
@@ -90,9 +88,7 @@ class HPOManager(LightningFlow):
             elif run_work.has_failed:
                 self.results[run['id']] = (run, "Failed")
             elif run_work.has_started:
-                self.results[run['id']] = (run, "Started")
-                    # running_runs.append(run)
-                # self.run_scheduler.running_runs = []
+                self.results[run['id']] = (run, "started")
 
         # if self.explore_id is not None:
         #     run = None
@@ -125,11 +121,10 @@ def render_fn(state: AppState) -> None:
 
     if start_runs:
         if performance:
-            # TODO: Currently medium == high but should be changed when dynamic works are supported
             performance_runs = {
                 "low": 1,
-                "medium": 1,
-                "high": 1,
+                "medium": 5,
+                "high": 10,
             }
             state.generated_runs = _generate_runs(
                 performance_runs[performance],
@@ -141,6 +136,8 @@ def render_fn(state: AppState) -> None:
     st.write("## Results")
 
     if state.results:
+        spinners = []
+
         keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
         columns = st.columns(len(keys) + 2)
 
@@ -155,7 +152,16 @@ def render_fn(state: AppState) -> None:
             st.write("### performance")
 
             for result in state.results.values():
-                st.write(result[1])
+                if result[1] == "launching":
+                    spinner_context = st.spinner("Launching...")
+                    spinner_context.__enter__()
+                    spinners.append(spinner_context)
+                elif result[1] == "started":
+                    spinner_context = st.spinner("Running...")
+                    spinner_context.__enter__()
+                    spinners.append(spinner_context)
+                else:
+                    st.write(result[1])
 
         with columns[-1]:
             st.write("### ---")
@@ -167,7 +173,7 @@ def render_fn(state: AppState) -> None:
             #     return callback
 
             for result in state.results.values():
-                st.write("---")
+                st.write("Not Supported")
                 # if state.fiftyone_scheduler.run_id == result[0]["id"]:
                 #     if state.fiftyone_scheduler.done:
                 #         st.write(
@@ -192,7 +198,7 @@ def render_fn(state: AppState) -> None:
                 #     else:
                 #         st.write("Failed")
 
-    # if state.run_scheduler.running_runs:  # or state.run_scheduler.queued_runs:
-    #     with st.spinner("Training..."):
-    #         time.sleep(2)
-    #         raise RerunException(RerunData())
+        if spinners:
+            time.sleep(2)
+            _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
+            raise RerunException(RerunData())

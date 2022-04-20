@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 import logging
 
 from jinja2 import Environment, FileSystemLoader
-from lightning import LightningFlow, LightningWork
+from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
 from lightning.storage.path import Path
 
@@ -65,29 +65,13 @@ class RunGeneratedScript(TracerPythonScript):
         )
 
 
-# class MyTestWork(LightningWork):
-#
-#     def __init__(self):
-#         super().__init__(blocking=False)
-#
-#         self.monitor = None
-#
-#     def run(self, script_dir: str, run_dict: Dict[str, str]):
-#         self.monitor = script_dir
-
-
 class RunScheduler(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        self.work_0 = RunGeneratedScript()
-
-        # for idx in range(10):
-        #     run_work = RunGeneratedScript(__file__)
-        #     setattr(self, f"run_work_{idx}", run_work)
-
-        # self.script_dir = None
-        # self.running_runs = None
+        for idx in range(10):
+            run_work = RunGeneratedScript()
+            setattr(self, f"work_{idx}", run_work)
 
     def run(self, queued_runs: Optional[List[Dict[str, Any]]]):
         logging.info(f"Queued runs: {queued_runs}")
@@ -95,4 +79,3 @@ class RunScheduler(LightningFlow):
             run_work = getattr(self, f"work_{run['id']}")
             logging.info(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
             run_work.run(".", run)
-        # self.running_runs = queued_runs
