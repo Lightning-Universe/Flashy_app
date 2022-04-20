@@ -76,18 +76,20 @@ class HPOManager(LightningFlow):
             self.run_scheduler.run(runs)
             self.generated_runs = None
 
+            for run in runs:
+                self.results[run['id']] = (run, "Launching")
+
         # if self.run_scheduler.running_runs is not None:
         #     running_runs = []
-            for run in runs:
-                run_work = getattr(self.run_scheduler, f"run_work_{run['id']}")
-                if run_work.has_succeeded:
-                    self.results[run['id']] = (run, run_work.monitor)
-                elif run_work.has_failed:
-                    self.results[run['id']] = (run, "Failed")
-                elif run_work.has_started:
-                    self.results[run['id']] = (run, "Started")
-                else:
-                    self.results[run['id']] = (run, "Launching")
+        for result in self.results.values():
+            run = result[0]
+            run_work = getattr(self.run_scheduler, f"run_work_{run['id']}")
+            if run_work.has_succeeded:
+                self.results[run['id']] = (run, run_work.monitor)
+            elif run_work.has_failed:
+                self.results[run['id']] = (run, "Failed")
+            elif run_work.has_started:
+                self.results[run['id']] = (run, "Started")
                     # running_runs.append(run)
                 # self.run_scheduler.running_runs = []
 
