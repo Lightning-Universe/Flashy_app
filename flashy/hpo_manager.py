@@ -84,8 +84,10 @@ class HPOManager(LightningFlow):
                     self.results[run['id']] = (run, run_work.monitor)
                 elif run_work.has_failed:
                     self.results[run['id']] = (run, "Failed")
+                elif run_work.has_started:
+                    self.results[run['id']] = (run, "Started")
                 else:
-                    self.results[run['id']] = (run, "Running")
+                    self.results[run['id']] = (run, "Launching")
                     # running_runs.append(run)
                 # self.run_scheduler.running_runs = []
 
