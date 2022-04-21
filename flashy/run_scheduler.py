@@ -1,72 +1,81 @@
-from typing import Any, Dict, List, Optional
+import functools
+import os
 import os.path
+from typing import Any, Dict, List, Optional
+import logging
 
-from flash.core.data.utils import download_data
 from jinja2 import Environment, FileSystemLoader
-
-from lightning import LightningFlow, LightningWork
+from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
-
-import flashy
-
-env = Environment(loader=FileSystemLoader(flashy.TEMPLATES_ROOT))
+from lightning.storage.path import Path
 
 
-def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs):
-    template = env.get_template(os.path.join(template_file))
+@functools.lru_cache
+def _get_env():
+    return Environment(
+        loader=FileSystemLoader(os.path.join(os.path.dirname(__file__), "templates"))
+    )
+
+
+def _generate_script(script_dir, run: Dict[str, Any], template_file, **kwargs) -> str:
+    template = _get_env().get_template(os.path.join(template_file))
 
     variables = {
         "root": script_dir,
         "run_id": run["id"],
         "url": run["url"],
-        "method": run['method'],
-        "data_config": run['data_config'],
-        "model_config": run['model_config'],
-        **kwargs
+        "method": run["method"],
+        "data_config": run["data_config"],
+        "model_config": run["model_config"],
+        **kwargs,
     }
 
-    with open(os.path.join(script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}"), "w") as f:
+    generated_script = os.path.join(
+        script_dir, f"{run['id']}_{template_file.replace('jinja', 'py')}"
+    )
+    with open(generated_script, "w") as f:
+        logging.info(f"Rendering {template_file} with variables: {variables}")
         f.write(template.render(**variables))
 
+    return generated_script
 
-class DataDownloader(LightningWork):
 
-    def __init__(self):
-        super().__init__(blocking=False)
+class RunGeneratedScript(TracerPythonScript):
+    def __init__(self, **kwargs):
+        super().__init__(__file__, blocking=False, raise_exception=True, **kwargs)
+        self.script_dir = None
+        self.run_dict = None
+        self.best_model_path: Optional[Path] = None
+        self.monitor = None
 
-        self.done = False
+    def run(self, script_dir: str, run_dict: Dict[str, str]):
+        self.script_dir = script_dir
+        self.run_dict = run_dict
+        print(f"Generating script in: {script_dir}")
+        self.script_path = _generate_script(
+            script_dir, run_dict, f"{run_dict['task']}.jinja", rendering=False
+        )
+        print(f"Running script: {self.script_path}")
+        super().run()
 
-    def run(self, root, url):
-        self.done = False
-        download_data(url, root)
-        self.done = True
+    def on_after_run(self, res):
+        self.monitor = float(res["trainer"].callback_metrics["val_accuracy"].item())
+        self.best_model_path = Path(
+            os.path.join(self.script_dir, f"{self.run_dict['id']}.pt")
+        )
 
 
 class RunScheduler(LightningFlow):
-
     def __init__(self):
         super().__init__()
 
         for idx in range(10):
-            run_work = TracerPythonScript(__file__)
-            setattr(self, f"run_work_{idx}", run_work)
+            run_work = RunGeneratedScript()
+            setattr(self, f"work_{idx}", run_work)
 
-        self.data_downloader = DataDownloader()
-
-        self.script_dir = None
-
-        self.queued_runs: Optional[List[Dict[str, Any]]] = None
-        self.running_runs = None
-
-    def run(self):
-        if self.queued_runs:
-            self.data_downloader.run(self.script_dir, self.queued_runs[0]["url"])
-
-        if self.queued_runs and self.data_downloader.done:
-            for run in self.queued_runs:
-                _generate_script(self.script_dir, run, f"{run['task']}.jinja", rendering=False)
-                run_work = getattr(self, f"run_work_{run['id']}")
-                run_work.script_path = str(os.path.join(self.script_dir, f"{run['id']}_{run['task']}.py"))
-                run_work.run()
-            self.running_runs = self.queued_runs
-            self.queued_runs = None
+    def run(self, queued_runs: Optional[List[Dict[str, Any]]]):
+        logging.info(f"Queued runs: {queued_runs}")
+        for run in queued_runs:
+            run_work = getattr(self, f"work_{run['id']}")
+            logging.info(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
+            run_work.run(".", run)

@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.git
+
 # C extensions
 *.so
 
@@ -157,6 +159,3 @@ lightning_logs
 
 .storage/
 .vscode
-lightning-*.tar.gz
-
-.DS_Store

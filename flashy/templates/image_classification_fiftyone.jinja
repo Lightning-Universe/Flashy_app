@@ -20,5 +20,3 @@ datamodule = ImageClassificationData.from_{{ method }}(
 trainer = flash.Trainer(limit_predict_batches=20)
 model = ImageClassifier.load_from_checkpoint("{{ checkpoint }}")
 predictions = trainer.predict(model, dataloaders=datamodule.val_dataloader(), output="fiftyone")  # output FiftyOne format
-
-torch.save(predictions, os.path.join("{{ root }}", "{{ run_id }}_predictions.pt"))

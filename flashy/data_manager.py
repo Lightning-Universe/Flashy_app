@@ -4,7 +4,6 @@ import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
-from streamlit.scriptrunner import RerunData, RerunException
 
 from flashy.utilities import add_flashy_styles
 
@@ -32,7 +31,7 @@ class DataManager(LightningFlow):
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
-    st.title("Load your data!")
+    st.title(f"Load your data! {state.selected_task}")
 
     # TODO: Auto-generate this
     if state.selected_task == "image_classification":
