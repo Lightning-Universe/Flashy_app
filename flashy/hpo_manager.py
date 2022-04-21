@@ -1,5 +1,6 @@
 import time
 from copy import copy
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import logging
 
@@ -92,7 +93,11 @@ class HPOManager(LightningFlow):
                 self.results[run['id']] = (run, "started")
 
             if self.explore_id is not None and run["id"] == self.explore_id:
-                self.fo.run(run, run_work.best_model_path)
+                logging.info(
+                    f"Launching FiftyOne with path: {run_work.best_model_path}, of type: "
+                    f"{type(run_work.best_model_path)}"
+                )
+                self.fo.run(run, Path(run_work.best_model_path))
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)

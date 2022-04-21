@@ -18,8 +18,6 @@ class FiftyOneTemplateTracer(TracerPythonScript):
         self._session = None
 
     def run(self, run: Dict[str, Any], checkpoint: Path):
-        checkpoint.get(overwrite=True)
-
         self.script_path = _generate_script(
             ".", run, f"{run['task']}_fiftyone.jinja", checkpoint=str(checkpoint)
         )
@@ -47,12 +45,12 @@ class FiftyOneScheduler(LightningFlow):
         self.run_id = None
         self.ready = False
 
-    def run(self, run: Dict[str, Any], checkpoint: Path):
+    def run(self, run: Dict[str, Any], checkpoint: str):
         self.ready = False
 
         if run["id"] != self.run_id:
             self.run_id = run["id"]
-            self.work.run(run, checkpoint)
+            self.work.run(run, Path(checkpoint))
 
         if self.work.has_succeeded:
             self.ready = True
