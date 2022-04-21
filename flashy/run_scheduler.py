@@ -63,6 +63,7 @@ class RunGeneratedScript(TracerPythonScript):
         self.best_model_path = Path(
             os.path.join(self.script_dir, f"{self.run_dict['id']}.pt")
         )
+        logging.info(f"Stored best model path: {self.best_model_path}")
 
 
 class RunScheduler(LightningFlow):
