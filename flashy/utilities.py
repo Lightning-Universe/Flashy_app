@@ -32,10 +32,10 @@ def add_flashy_styles(render_fn):
              * {{
                 font-size: 100%;
                 font-family: Courier;
-             }}
-             .stSpinner>div>div {{
-                height: 25.59px !important;
-                width: 25.59px !important;
+             }} 
+             .stSpinner>div:nth-child(2) {{
+                 height: 38.59px !important;
+                 width: 19.59px !important;
              }}
              </style>
              """,
