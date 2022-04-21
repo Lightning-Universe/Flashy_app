@@ -54,6 +54,7 @@ class HPOManager(LightningFlow):
         self.has_run = False
 
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
+        self.running_runs: Optional[List[Dict[str, Any]]] = []
 
         self.selected_task: Optional[str] = None
 
@@ -70,20 +71,19 @@ class HPOManager(LightningFlow):
 
         if self.generated_runs is not None:
             self.has_run = True
-            runs: List[Dict[str, Any]] = self.generated_runs
-            for run in runs:
+            self.running_runs: List[Dict[str, Any]] = self.generated_runs
+            for run in self.running_runs:
                 run["url"] = url
                 run["method"] = method
                 run["data_config"] = data_config
-            logging.info(f"Running: {runs}")
-            self.runs.run(runs)
+
+                self.results[run['id']] = (run, "launching")
+            logging.info(f"Running: {self.running_runs}")
+
+            self.runs.run(self.running_runs)
             self.generated_runs = None
 
-            for run in runs:
-                self.results[run['id']] = (run, "launching")
-
-        for result in copy(self.results).values():
-            run = result[0]
+        for run in self.running_runs:
             run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
                 self.results[run['id']] = (run, run_work.monitor)
@@ -130,9 +130,9 @@ def render_fn(state: AppState) -> None:
 
     st.write("## Results")
 
-    if state.results:
-        spinners = []
+    spinners = []
 
+    if state.results:
         keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
         columns = st.columns(len(keys) + 2)
 
@@ -194,7 +194,7 @@ def render_fn(state: AppState) -> None:
                         if explore:
                             raise RerunException(RerunData())
 
-        if spinners:
-            time.sleep(2)
-            _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
-            raise RerunException(RerunData())
+    time.sleep(1)
+    if spinners:
+        _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
+    raise RerunException(RerunData())
