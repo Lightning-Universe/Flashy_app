@@ -30,9 +30,7 @@ class FiftyOneTemplateTracer(TracerPythonScript):
 
         predictions = res["predictions"]
 
-        os.environ["FIFTYONE_DEFAULT_APP_ADDRESS"] = "0.0.0.0"
-        # os.environ["FIFTYONE_DEFAULT_APP_PORT"] = "5151"
-        self._session = visualize(predictions, wait=False, remote=False)
+        self._session = visualize(predictions, remote=True, address="0.0.0.0")
 
         logging.info(f"Launched at URL: {self._session.url}")
 
