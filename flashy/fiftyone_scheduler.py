@@ -17,9 +17,11 @@ class FiftyOneTemplateTracer(TracerPythonScript):
 
         self._session = None
 
-    def run(self, run: Dict[str, Any], checkpoint: str):
+    def run(self, run: Dict[str, Any], checkpoint: Path):
+        checkpoint.get(overwrite=True)
+
         self.script_path = _generate_script(
-            ".", run, f"{run['task']}_fiftyone.jinja", checkpoint=checkpoint
+            ".", run, f"{run['task']}_fiftyone.jinja", checkpoint=str(checkpoint)
         )
         super().run()
 
