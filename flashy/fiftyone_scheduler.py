@@ -31,7 +31,7 @@ class FiftyOneTemplateTracer(TracerPythonScript):
 
         predictions = res["predictions"]
 
-        self._session = visualize(predictions, wait=False, remote=True)
+        self._session = visualize(predictions, wait=False, remote=True, address="0.0.0.0")
 
         logging.info("Launched")
 
