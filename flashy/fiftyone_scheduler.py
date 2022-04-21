@@ -10,7 +10,6 @@ from lightning.storage.path import Path
 
 from flashy.run_scheduler import _generate_script
 
-
 class FiftyOneTemplateTracer(TracerPythonScript):
     def __init__(self):
         super().__init__(__file__, blocking=True, run_once=False, exposed_ports={"fiftyone": 5151})
@@ -31,9 +30,11 @@ class FiftyOneTemplateTracer(TracerPythonScript):
 
         predictions = res["predictions"]
 
-        self._session = visualize(predictions, wait=False, remote=True, address="0.0.0.0")
+        os.environ["FIFTYONE_DEFAULT_APP_ADDRESS"] = "0.0.0.0"
+        # os.environ["FIFTYONE_DEFAULT_APP_PORT"] = "5151"
+        self._session = visualize(predictions, wait=False, remote=False)
 
-        logging.info("Launched")
+        logging.info(f"Launched at URL: {self._session.url}")
 
 
 class FiftyOneScheduler(LightningFlow):
