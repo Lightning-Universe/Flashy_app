@@ -3,4 +3,5 @@ lightning-flash[image, text]
 fiftyone
 click==8
 streamlit==1.6.0
+streamlit-autorefresh
 jinja2
