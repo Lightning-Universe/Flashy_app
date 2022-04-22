@@ -55,6 +55,7 @@ class HPOManager(LightningFlow):
 
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
+        self.runs_progress = {}
 
         self.selected_task: Optional[str] = None
 
@@ -143,16 +144,22 @@ def render_fn(state: AppState) -> None:
             results = {run["id"]: (run, "launching") for run in state.generated_runs}
 
         keys = results[next(iter(results.keys()))][0]["model_config"].keys()
-        columns = st.columns(len(keys) + 2)
+        columns = st.columns(len(keys) + 4)
+
+        with columns[0]:
+            st.write("### ID")
+
+            for result in results.values():
+                st.write(result[0]["id"])
 
         for idx, key in enumerate(keys):
-            with columns[idx]:
+            with columns[idx + 1]:
                 st.write(f"### {key}")
 
                 for result in results.values():
                     st.write(result[0]["model_config"][key])
 
-        with columns[-2]:
+        with columns[-3]:
             st.write("### Performance")
 
             for result in results.values():
@@ -166,6 +173,16 @@ def render_fn(state: AppState) -> None:
                     spinners.append(spinner_context)
                 else:
                     st.write(result[1])
+
+        with columns[-2]:
+            st.write("### Progress")
+
+            for result in results.values():
+                progress = getattr(getattr(state.runs, f"work_{result[0]['id']}", None), "progress", None)
+                progress = progress or 0.0
+                old_progress = state.runs_progress.get(result[0]['id'], progress)
+                state.runs_progress[result[0]['id']] = progress if progress > old_progress else old_progress
+                st.progress(state.runs_progress[result[0]['id']])
 
         with columns[-1]:
             st.write("### FiftyOne")
@@ -201,6 +218,6 @@ def render_fn(state: AppState) -> None:
                     spinners.append(spinner_context)
 
         if spinners or state.explore_id != state.fo.run_id:
-            time.sleep(1)
+            time.sleep(0.5)
             _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
             raise RerunException(RerunData())

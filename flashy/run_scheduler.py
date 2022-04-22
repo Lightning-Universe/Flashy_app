@@ -1,6 +1,7 @@
 import functools
 import os
 import os.path
+import sys
 from typing import Any, Dict, List, Optional
 import logging
 
@@ -47,6 +48,7 @@ class RunGeneratedScript(TracerPythonScript):
         self.run_dict = None
         self.best_model_path: Optional[Path] = None
         self.monitor = None
+        self.progress = None
 
     def run(self, script_dir: str, run_dict: Dict[str, str]):
         self.script_dir = script_dir
@@ -57,6 +59,11 @@ class RunGeneratedScript(TracerPythonScript):
         )
         print(f"Running script: {self.script_path}")
         super().run()
+
+    def _run_tracer(self):
+        sys.argv = [self.script_path]
+        tracer = self.configure_tracer()
+        return tracer.trace(self.script_path, self, *self.script_args)
 
     def on_after_run(self, res):
         self.monitor = float(res["trainer"].callback_metrics["val_accuracy"].item())

@@ -37,6 +37,9 @@ def add_flashy_styles(render_fn):
                     height: 25.59px !important;
                     width: 25.59px !important;
                 }}
+                .stProgress>div>div>div {{
+                    height: 25.59px !important;
+                }}
             </style>
             """,
             unsafe_allow_html=True,

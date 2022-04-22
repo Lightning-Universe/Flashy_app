@@ -1,6 +1,21 @@
+import sys
 import flash
 from flash.core.data.utils import download_data
 from flash.image import ImageClassificationData, ImageClassifier
+from pytorch_lightning.callbacks.progress.base import ProgressBarBase
+
+app_state = sys.argv[1]
+
+class LitProgressBar(ProgressBarBase):
+    def __init__(self):
+        super().__init__()  # don't forget this :)
+        self.enable = True
+    def disable(self):
+        self.enable = False
+    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        super().on_train_batch_end(trainer, pl_module, outputs, batch, batch_idx)  # don't forget this :)
+        percent = (self.train_batch_idx / self.total_train_batches)
+        app_state.progress = percent
 
 {% if not rendering %}
 import os
@@ -17,7 +32,7 @@ datamodule = ImageClassificationData.from_{{ method }}(
 
 model = ImageClassifier(backbone="{{ model_config.backbone }}", learning_rate={{ model_config.learning_rate }}, labels=datamodule.labels)
 
-trainer = flash.Trainer(max_epochs=1, limit_train_batches=10, limit_val_batches=10)
+trainer = flash.Trainer(max_epochs=1, limit_val_batches=10, callbacks=[LitProgressBar()])
 trainer.finetune(model, datamodule=datamodule, strategy="freeze")
 
 {% if not rendering %}
