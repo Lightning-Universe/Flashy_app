@@ -189,12 +189,12 @@ def render_fn(state: AppState) -> None:
                     state.explore_id = result[0]["id"]
 
                 if state.explore_id == result[0]["id"] and state.fo.ready and state.fo.run_id == result[0]["id"]:
-                        st.write(
-                            """
-                            <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                        """,
-                            unsafe_allow_html=True,
-                        )
+                    st.write(
+                        """
+                        <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
+                    """,
+                        unsafe_allow_html=True,
+                    )
                 elif state.explore_id == result[0]["id"] or button:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()
