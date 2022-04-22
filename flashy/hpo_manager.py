@@ -11,6 +11,7 @@ from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
+from streamlit_autorefresh import st_autorefresh
 
 from flashy.fiftyone_scheduler import FiftyOneScheduler
 from flashy.run_scheduler import RunScheduler
@@ -52,6 +53,7 @@ class HPOManager(LightningFlow):
         super().__init__()
 
         self.has_run = False
+        self.started = False
 
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
@@ -112,27 +114,27 @@ def render_fn(state: AppState) -> None:
 
     performance = st.select_slider("Target performance", ("low", "medium", "high"))
 
-    start_runs = st.button("Start training!", disabled=state.has_run)
+    start_runs = st.button("Start training!", disabled=state.has_run or state.generated_runs is not None)
 
     if start_runs:
-        if performance:
-            performance_runs = {
-                "low": 1,
-                "medium": 5,
-                "high": 10,
-            }
-            state.generated_runs = _generate_runs(
-                performance_runs[performance],
-                state.selected_task,
-                _search_spaces[state.selected_task][quality],
-            )
-            raise RerunException(RerunData())
+        performance_runs = {
+            "low": 1,
+            "medium": 5,
+            "high": 10,
+        }
+        state.generated_runs = _generate_runs(
+            performance_runs[performance],
+            state.selected_task,
+            _search_spaces[state.selected_task][quality],
+        )
+        st_autorefresh(interval=500, limit=10)
 
     st.write("## Results")
 
-    spinners = []
-
     if state.results:
+        st_autorefresh(limit=1)
+        spinners = []
+
         keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
         columns = st.columns(len(keys) + 2)
 
@@ -194,7 +196,7 @@ def render_fn(state: AppState) -> None:
                         if explore:
                             raise RerunException(RerunData())
 
-    time.sleep(1)
-    if spinners:
-        _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
-    raise RerunException(RerunData())
+        if spinners:
+            time.sleep(1)
+            _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
+            raise RerunException(RerunData())
