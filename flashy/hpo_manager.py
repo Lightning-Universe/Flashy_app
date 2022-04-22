@@ -112,9 +112,15 @@ def render_fn(state: AppState) -> None:
 
     performance = st.select_slider("Target performance", ("low", "medium", "high"))
 
-    start_runs = st.button("Start training!", disabled=state.has_run or state.generated_runs is not None)
+    start_training_placeholder = st.empty()
+    start_runs = start_training_placeholder.button(
+        "Start training!", disabled=state.has_run or state.generated_runs is not None
+    )
 
     if start_runs:
+        start_training_placeholder.button(
+            "Start training!", disabled=True
+        )
         performance_runs = {
             "low": 1,
             "medium": 5,
@@ -125,27 +131,31 @@ def render_fn(state: AppState) -> None:
             state.selected_task,
             _search_spaces[state.selected_task][quality],
         )
-        raise RerunException(RerunData())
 
     st.write("## Results")
 
-    if state.results:
+    if state.results or state.generated_runs:
         spinners = []
 
-        keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
+        results = state.results
+
+        if not results:
+            results = {run["id"]: (run, "launching") for run in state.generated_runs}
+
+        keys = results[next(iter(results.keys()))][0]["model_config"].keys()
         columns = st.columns(len(keys) + 2)
 
         for idx, key in enumerate(keys):
             with columns[idx]:
                 st.write(f"### {key}")
 
-                for result in state.results.values():
+                for result in results.values():
                     st.write(result[0]["model_config"][key])
 
         with columns[-2]:
             st.write("### Performance")
 
-            for result in state.results.values():
+            for result in results.values():
                 if result[1] == "launching":
                     spinner_context = st.spinner("Launching...")
                     spinner_context.__enter__()
@@ -160,9 +170,9 @@ def render_fn(state: AppState) -> None:
         with columns[-1]:
             st.write("### FiftyOne")
 
-            for result in state.results.values():
+            for result in results.values():
                 if state.explore_id == result[0]["id"]:
-                    if state.fo.ready:
+                    if state.fo.ready and state.fo.run_id == result[0]["id"]:
                         st.write(
                             """
                             <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
@@ -191,6 +201,3 @@ def render_fn(state: AppState) -> None:
             time.sleep(1)
             _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
             raise RerunException(RerunData())
-    else:
-        time.sleep(1)
-        raise RerunException(RerunData())
