@@ -130,9 +130,9 @@ def render_fn(state: AppState) -> None:
 
     st.write("## Results")
 
-    spinners = []
 
     if state.results:
+        spinners = []
         keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
         columns = st.columns(len(keys) + 2)
 
@@ -194,7 +194,7 @@ def render_fn(state: AppState) -> None:
                         if explore:
                             raise RerunException(RerunData())
 
-    time.sleep(1)
-    if spinners:
-        _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
-    raise RerunException(RerunData())
+        if spinners:
+            time.sleep(2)
+            _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
+            raise RerunException(RerunData())
