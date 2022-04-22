@@ -1,7 +1,6 @@
-import time
-from copy import copy
-from typing import Any, Dict, List, Optional, Tuple
 import logging
+import time
+from typing import Any, Dict, List, Optional, Tuple
 
 import streamlit as st
 from lightning import LightningFlow
@@ -11,7 +10,6 @@ from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
-from streamlit_autorefresh import st_autorefresh
 
 from flashy.fiftyone_scheduler import FiftyOneScheduler
 from flashy.run_scheduler import RunScheduler
@@ -127,12 +125,11 @@ def render_fn(state: AppState) -> None:
             state.selected_task,
             _search_spaces[state.selected_task][quality],
         )
-        st_autorefresh(interval=500, limit=10)
+        raise RerunException(RerunData())
 
     st.write("## Results")
 
     if state.results:
-        st_autorefresh(limit=1)
         spinners = []
 
         keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
@@ -163,14 +160,8 @@ def render_fn(state: AppState) -> None:
         with columns[-1]:
             st.write("### FiftyOne")
 
-            def set_explore_id(id):
-                def callback():
-                    state.explore_id = id
-
-                return callback
-
             for result in state.results.values():
-                if state.fo.run_id == result[0]["id"]:
+                if state.explore_id == result[0]["id"]:
                     if state.fo.ready:
                         st.write(
                             """
@@ -191,12 +182,15 @@ def render_fn(state: AppState) -> None:
                         explore = st.button(
                             "Explore!",
                             key=result[0]["id"],
-                            on_click=set_explore_id(result[0]["id"]),
                         )
                         if explore:
+                            state.explore_id = result[0]["id"]
                             raise RerunException(RerunData())
 
         if spinners:
             time.sleep(1)
             _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
             raise RerunException(RerunData())
+    else:
+        time.sleep(1)
+        raise RerunException(RerunData())
