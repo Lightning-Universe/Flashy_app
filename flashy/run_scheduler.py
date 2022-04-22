@@ -63,19 +63,14 @@ class RunGeneratedScript(TracerPythonScript):
         self.best_model_path = Path(
             os.path.join(self.script_dir, f"{self.run_dict['id']}.pt")
         )
+        logging.info(f"Stored best model path: {self.best_model_path}")
 
 
 class RunScheduler(LightningFlow):
-    def __init__(self):
-        super().__init__()
-
-        for idx in range(10):
-            run_work = RunGeneratedScript()
-            setattr(self, f"work_{idx}", run_work)
-
     def run(self, queued_runs: Optional[List[Dict[str, Any]]]):
         logging.info(f"Queued runs: {queued_runs}")
         for run in queued_runs:
-            run_work = getattr(self, f"work_{run['id']}")
+            run_work = RunGeneratedScript()
+            setattr(self, f"work_{run['id']}", run_work)
             logging.info(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
             run_work.run(".", run)

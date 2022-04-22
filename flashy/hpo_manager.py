@@ -1,12 +1,11 @@
-import time
-from copy import copy
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
 import logging
+import time
+from typing import Any, Dict, List, Optional, Tuple
 
 import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
+from lightning.storage import Path
 from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
@@ -52,8 +51,10 @@ class HPOManager(LightningFlow):
         super().__init__()
 
         self.has_run = False
+        self.started = False
 
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
+        self.running_runs: Optional[List[Dict[str, Any]]] = []
 
         self.selected_task: Optional[str] = None
 
@@ -70,20 +71,19 @@ class HPOManager(LightningFlow):
 
         if self.generated_runs is not None:
             self.has_run = True
-            runs: List[Dict[str, Any]] = self.generated_runs
-            for run in runs:
+            self.running_runs: List[Dict[str, Any]] = self.generated_runs
+            for run in self.running_runs:
                 run["url"] = url
                 run["method"] = method
                 run["data_config"] = data_config
-            logging.info(f"Running: {runs}")
-            self.runs.run(runs)
+
+                self.results[run['id']] = (run, "launching")
+            logging.info(f"Running: {self.running_runs}")
+
+            self.runs.run(self.running_runs)
             self.generated_runs = None
 
-            for run in runs:
-                self.results[run['id']] = (run, "launching")
-
-        for result in copy(self.results).values():
-            run = result[0]
+        for run in self.running_runs:
             run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
                 self.results[run['id']] = (run, run_work.monitor)
@@ -93,11 +93,9 @@ class HPOManager(LightningFlow):
                 self.results[run['id']] = (run, "started")
 
             if self.explore_id is not None and run["id"] == self.explore_id:
-                logging.info(
-                    f"Launching FiftyOne with path: {run_work.best_model_path}, of type: "
-                    f"{type(run_work.best_model_path)}"
-                )
-                self.fo.run(run, Path(run_work.best_model_path))
+                path = Path(run_work.best_model_path)
+                path._attach_work(run_work)
+                self.fo.run(run, path)
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
@@ -114,41 +112,50 @@ def render_fn(state: AppState) -> None:
 
     performance = st.select_slider("Target performance", ("low", "medium", "high"))
 
-    start_runs = st.button("Start training!", disabled=state.has_run)
+    start_training_placeholder = st.empty()
+    start_runs = start_training_placeholder.button(
+        "Start training!", disabled=state.has_run or state.generated_runs is not None
+    )
 
     if start_runs:
-        if performance:
-            performance_runs = {
-                "low": 1,
-                "medium": 5,
-                "high": 10,
-            }
-            state.generated_runs = _generate_runs(
-                performance_runs[performance],
-                state.selected_task,
-                _search_spaces[state.selected_task][quality],
-            )
-            raise RerunException(RerunData())
+        start_training_placeholder.button(
+            "Start training!", disabled=True
+        )
+        performance_runs = {
+            "low": 1,
+            "medium": 5,
+            "high": 10,
+        }
+        state.generated_runs = _generate_runs(
+            performance_runs[performance],
+            state.selected_task,
+            _search_spaces[state.selected_task][quality],
+        )
 
     st.write("## Results")
 
-    if state.results:
+    if state.results or state.generated_runs:
         spinners = []
 
-        keys = state.results[next(iter(state.results.keys()))][0]["model_config"].keys()
+        results = state.results
+
+        if not results:
+            results = {run["id"]: (run, "launching") for run in state.generated_runs}
+
+        keys = results[next(iter(results.keys()))][0]["model_config"].keys()
         columns = st.columns(len(keys) + 2)
 
         for idx, key in enumerate(keys):
             with columns[idx]:
                 st.write(f"### {key}")
 
-                for result in state.results.values():
+                for result in results.values():
                     st.write(result[0]["model_config"][key])
 
         with columns[-2]:
             st.write("### Performance")
 
-            for result in state.results.values():
+            for result in results.values():
                 if result[1] == "launching":
                     spinner_context = st.spinner("Launching...")
                     spinner_context.__enter__()
@@ -163,40 +170,37 @@ def render_fn(state: AppState) -> None:
         with columns[-1]:
             st.write("### FiftyOne")
 
-            def set_explore_id(id):
-                def callback():
-                    state.explore_id = id
+            fiftyone_buttons = []
 
-                return callback
-
-            for result in state.results.values():
-                if state.fo.run_id == result[0]["id"]:
-                    if state.fo.ready:
-                        st.write(
-                            """
-                            <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                        """,
-                            unsafe_allow_html=True,
-                        )
-                    else:
-                        spinner_context = st.spinner("Loading...")
-                        spinner_context.__enter__()
-                        spinners.append(spinner_context)
+            for result in results.values():
+                if result[1] == "Failed":
+                    st.write("Failed")
+                elif result[1] in ["launching", "started"]:
+                    st.write("Waiting")
                 else:
-                    if result[1] == "Failed":
-                        st.write("Failed")
-                    elif result[1] in ["launching", "started"]:
-                        st.write("Waiting")
-                    else:
-                        explore = st.button(
-                            "Explore!",
-                            key=result[0]["id"],
-                            on_click=set_explore_id(result[0]["id"]),
-                        )
-                        if explore:
-                            raise RerunException(RerunData())
+                    fiftyone_buttons.append((result, st.button(
+                        "Explore!",
+                        key=result[0]["id"],
+                        disabled=state.explore_id == result[0]["id"],
+                    )))
 
-        if spinners:
-            time.sleep(2)
+            for (result, button) in fiftyone_buttons:
+                if button:
+                    state.explore_id = result[0]["id"]
+
+                if state.explore_id == result[0]["id"] and state.fo.ready and state.fo.run_id == result[0]["id"]:
+                    st.write(
+                        """
+                        <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
+                    """,
+                        unsafe_allow_html=True,
+                    )
+                elif state.explore_id == result[0]["id"] or button:
+                    spinner_context = st.spinner("Loading...")
+                    spinner_context.__enter__()
+                    spinners.append(spinner_context)
+
+        if spinners or state.explore_id != state.fo.run_id:
+            time.sleep(1)
             _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
             raise RerunException(RerunData())

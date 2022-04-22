@@ -160,3 +160,4 @@ lightning_logs
 lightning-*.tar.gz
 
 .DS_Store
+.shared
