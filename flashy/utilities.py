@@ -25,20 +25,20 @@ def add_flashy_styles(render_fn):
         set_bg()
         st.markdown(
             f"""
-             <style>
-             .stButton>button {{
-                height: 25.59px;
-             }}
-             * {{
-                font-size: 100%;
-                font-family: Courier;
-             }}
-             .stSpinner>div>div {{
-                height: 25.59px !important;
-                width: 25.59px !important;
-             }}
-             </style>
-             """,
+            <style>
+                .stButton>button {{
+                    height: 25.59px;
+                }}
+                * {{
+                    font-size: 100%;
+                    font-family: Courier;
+                }}
+                .stSpinner>div>div:nth-child(1) {{
+                    height: 25.59px !important;
+                    width: 25.59px !important;
+                }}
+            </style>
+            """,
             unsafe_allow_html=True,
         )
         render_fn(state)
