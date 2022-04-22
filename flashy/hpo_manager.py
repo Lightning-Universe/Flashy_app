@@ -170,32 +170,35 @@ def render_fn(state: AppState) -> None:
         with columns[-1]:
             st.write("### FiftyOne")
 
+            fiftyone_buttons = []
+
             for result in results.values():
-                if state.explore_id == result[0]["id"]:
-                    if state.fo.ready and state.fo.run_id == result[0]["id"]:
+                if result[1] == "Failed":
+                    st.write("Failed")
+                elif result[1] in ["launching", "started"]:
+                    st.write("Waiting")
+                else:
+                    fiftyone_buttons.append((result, st.button(
+                        "Explore!",
+                        key=result[0]["id"],
+                        disabled=state.explore_id == result[0]["id"],
+                    )))
+
+            for (result, button) in fiftyone_buttons:
+                if button:
+                    state.explore_id = result[0]["id"]
+
+                if state.explore_id == result[0]["id"] and state.fo.ready and state.fo.run_id == result[0]["id"]:
                         st.write(
                             """
                             <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
                         """,
                             unsafe_allow_html=True,
                         )
-                    else:
-                        spinner_context = st.spinner("Loading...")
-                        spinner_context.__enter__()
-                        spinners.append(spinner_context)
-                else:
-                    if result[1] == "Failed":
-                        st.write("Failed")
-                    elif result[1] in ["launching", "started"]:
-                        st.write("Waiting")
-                    else:
-                        explore = st.button(
-                            "Explore!",
-                            key=result[0]["id"],
-                        )
-                        if explore:
-                            state.explore_id = result[0]["id"]
-                            raise RerunException(RerunData())
+                elif state.explore_id == result[0]["id"] or button:
+                    spinner_context = st.spinner("Loading...")
+                    spinner_context.__enter__()
+                    spinners.append(spinner_context)
 
         if spinners or state.explore_id != state.fo.run_id:
             time.sleep(1)
