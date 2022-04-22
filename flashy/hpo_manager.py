@@ -197,7 +197,7 @@ def render_fn(state: AppState) -> None:
                             state.explore_id = result[0]["id"]
                             raise RerunException(RerunData())
 
-        if spinners:
+        if spinners or state.explore_id != state.fo.run_id:
             time.sleep(1)
             _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
             raise RerunException(RerunData())
