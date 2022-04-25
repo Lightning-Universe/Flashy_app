@@ -45,7 +45,7 @@ class RunGeneratedScript(TracerPythonScript):
         super().__init__(__file__, blocking=False, raise_exception=True, **kwargs)
         self.script_dir = None
         self.run_dict = None
-        self.best_model_path: Optional[Path] = None
+        self.last_modeL_path: Optional[Path] = None
         self.monitor = None
 
     def run(self, script_dir: str, run_dict: Dict[str, str]):
@@ -60,10 +60,10 @@ class RunGeneratedScript(TracerPythonScript):
 
     def on_after_run(self, res):
         self.monitor = float(res["trainer"].callback_metrics["val_accuracy"].item())
-        self.best_model_path = Path(
+        self.last_model_path = Path(
             os.path.join(self.script_dir, f"{self.run_dict['id']}.pt")
         )
-        logging.info(f"Stored best model path: {self.best_model_path}")
+        logging.info(f"Stored best model path: {self.last_model_path}")
 
 
 class RunScheduler(LightningFlow):

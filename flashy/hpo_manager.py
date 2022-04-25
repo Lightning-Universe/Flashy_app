@@ -10,6 +10,7 @@ from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
+import os
 
 from flashy.fiftyone_scheduler import FiftyOneScheduler
 from flashy.run_scheduler import RunScheduler
@@ -64,7 +65,7 @@ class HPOManager(LightningFlow):
 
         self.fo = FiftyOneScheduler()
 
-        self.results: Dict[int, Tuple[Dict[str, Any], float]] = {}
+        self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
 
     def run(self, selected_task: str, url, method, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
@@ -77,7 +78,8 @@ class HPOManager(LightningFlow):
                 run["method"] = method
                 run["data_config"] = data_config
 
-                self.results[run['id']] = (run, "launching")
+                self.results[run['id']] = (run, "launching", "some item")
+                logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
             self.runs.run(self.running_runs)
@@ -86,14 +88,14 @@ class HPOManager(LightningFlow):
         for run in self.running_runs:
             run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
-                self.results[run['id']] = (run, run_work.monitor)
+                self.results[run['id']] = (run, run_work.monitor, run_work.last_model_path)
             elif run_work.has_failed:
-                self.results[run['id']] = (run, "Failed")
+                self.results[run['id']] = (run, "Failed", "")
             elif run_work.has_started:
-                self.results[run['id']] = (run, "started")
+                self.results[run['id']] = (run, "started", "")
 
             if self.explore_id is not None and run["id"] == self.explore_id:
-                path = Path(run_work.best_model_path)
+                path = Path(run_work.last_model_path)
                 path._attach_work(run_work)
                 self.fo.run(run, path)
 
@@ -140,10 +142,10 @@ def render_fn(state: AppState) -> None:
         results = state.results
 
         if not results:
-            results = {run["id"]: (run, "launching") for run in state.generated_runs}
+            results = {run["id"]: (run, "launching", "") for run in state.generated_runs}
 
         keys = results[next(iter(results.keys()))][0]["model_config"].keys()
-        columns = st.columns(len(keys) + 2)
+        columns = st.columns(len(keys) + 3)
 
         for idx, key in enumerate(keys):
             with columns[idx]:
@@ -152,7 +154,7 @@ def render_fn(state: AppState) -> None:
                 for result in results.values():
                     st.write(result[0]["model_config"][key])
 
-        with columns[-2]:
+        with columns[-3]:
             st.write("### Performance")
 
             for result in results.values():
@@ -167,7 +169,7 @@ def render_fn(state: AppState) -> None:
                 else:
                     st.write(result[1])
 
-        with columns[-1]:
+        with columns[-2]:
             st.write("### FiftyOne")
 
             fiftyone_buttons = []
@@ -199,6 +201,28 @@ def render_fn(state: AppState) -> None:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
+
+        with columns[-1]:
+            st.write("### Download Ckpt")
+
+            fiftyone_buttons_ckpt = []
+
+            for result in results.values():
+                if result[1] == "Failed":
+                    st.write("Failed")
+                elif result[1] in ["launching", "started"]:
+                    st.write("Waiting...")
+                else:
+                    if not os.path.exists(result[2]):
+                        logging.error(f"Checkpoint file at: {result[2]} not found.")
+                    with open(result[2], 'rb') as ckpt_file:
+                        fiftyone_buttons_ckpt.append((result, st.download_button(
+                            data=ckpt_file,
+                            file_name="checkpoint_"+str(result[0]["id"])+".ckpt",
+                            label="Download Checkpoint",
+                            key=str(result[0]["id"]) + "ckpt",
+                            disabled=result[1] in ["Failed", "launching", "started"],
+                        )))
 
         if spinners or state.explore_id != state.fo.run_id:
             time.sleep(1)
