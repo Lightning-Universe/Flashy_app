@@ -6,6 +6,7 @@ import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.storage import Path
+from lightning.storage.path import PathGetRequest, filesystem, shared_storage_path
 from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
@@ -68,6 +69,8 @@ class HPOManager(LightningFlow):
 
         self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
 
+        self.env = None
+
     def run(self, selected_task: str, url, method, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
@@ -79,7 +82,7 @@ class HPOManager(LightningFlow):
                 run["method"] = method
                 run["data_config"] = data_config
 
-                self.results[run['id']] = (run, "launching", "some item")
+                self.results[run['id']] = (run, "launching", None)
                 logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
@@ -89,16 +92,20 @@ class HPOManager(LightningFlow):
         for run in self.running_runs:
             run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
-                self.results[run['id']] = (run, run_work.monitor, run_work.last_model_path)
+                # HACK!!!
+                self.env = run_work.env
+                self.results[run['id']] = (run, run_work.monitor, run_work.last_model_path_source)
             elif run_work.has_failed:
-                self.results[run['id']] = (run, "Failed", "")
+                self.results[run['id']] = (run, "Failed", None)
             elif run_work.has_started:
-                self.results[run['id']] = (run, "started", "")
+                self.results[run['id']] = (run, "started", None)
 
-            if self.explore_id is not None and run["id"] == self.explore_id:
-                path = Path(run_work.last_model_path)
-                path._attach_work(run_work)
-                self.fo.run(run, path)
+        if self.explore_id is not None:
+            result = self.results[self.explore_id]
+            run_work = getattr(self.runs, f"work_{result[0]['id']}")
+            path = Path(run_work.last_model_path)
+            path._attach_work(run_work)
+            self.fo.run(result[0], path)
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
@@ -206,9 +213,14 @@ def render_fn(state: AppState) -> None:
                     spinners.append(spinner_context)
 
         with columns[-1]:
-            st.write("### Download Ckpt")
+            st.write("### Checkpoint")
 
-            fiftyone_buttons_ckpt = []
+            fs = None
+            if state.env is not None:
+                for key, value in state.env.items():
+                    if value:
+                        os.environ[key] = value
+                fs = filesystem()
 
             for result in results.values():
                 if result[1] == "Failed":
@@ -216,16 +228,16 @@ def render_fn(state: AppState) -> None:
                 elif result[1] in ["launching", "started"]:
                     st.write("Waiting...")
                 else:
-                    if not os.path.exists(result[2]):
-                        logging.error(f"Checkpoint file at: {result[2]} not found.")
-                    with open(result[2], 'rb') as ckpt_file:
-                        fiftyone_buttons_ckpt.append((result, st.download_button(
-                            data=ckpt_file,
-                            file_name="checkpoint_"+str(result[0]["id"])+".ckpt",
-                            label="Download Checkpoint",
-                            key=str(result[0]["id"]) + "ckpt",
-                            disabled=result[1] in ["Failed", "launching", "started"],
-                        )))
+                    # if not os.path.exists(result[2]):
+                    #     logging.error(f"Checkpoint file at: {result[2]} not found.")
+                    if fs is not None:
+                        with fs.open(result[2], 'rb') as ckpt_file:
+                            st.download_button(
+                                data=ckpt_file.read(),
+                                file_name="checkpoint_"+str(result[0]["id"])+".ckpt",
+                                label="Download",
+                                key=str(result[0]["id"]),
+                            )
 
         if refresh or spinners or state.explore_id != state.fo.run_id:
             time.sleep(0.5)
