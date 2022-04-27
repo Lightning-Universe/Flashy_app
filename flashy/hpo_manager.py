@@ -56,6 +56,7 @@ class HPOManager(LightningFlow):
 
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
+        self.runs_progress = {}
 
         self.selected_task: Optional[str] = None
 
@@ -138,6 +139,7 @@ def render_fn(state: AppState) -> None:
 
     if state.results or state.generated_runs:
         spinners = []
+        refresh = False
 
         results = state.results
 
@@ -163,9 +165,10 @@ def render_fn(state: AppState) -> None:
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
                 elif result[1] == "started":
-                    spinner_context = st.spinner("Running...")
-                    spinner_context.__enter__()
-                    spinners.append(spinner_context)
+                    progress = getattr(getattr(state.runs, f"work_{result[0]['id']}", None), "progress", None)
+                    state.runs_progress[result[0]['id']] = progress or 0.0
+                    st.progress(state.runs_progress[result[0]['id']])
+                    refresh = True
                 else:
                     st.write(result[1])
 
@@ -224,7 +227,7 @@ def render_fn(state: AppState) -> None:
                             disabled=result[1] in ["Failed", "launching", "started"],
                         )))
 
-        if spinners or state.explore_id != state.fo.run_id:
-            time.sleep(1)
+        if refresh or spinners or state.explore_id != state.fo.run_id:
+            time.sleep(0.5)
             _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
             raise RerunException(RerunData())
