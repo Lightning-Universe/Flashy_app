@@ -3,19 +3,27 @@ import flash
 from flash.core.data.utils import download_data
 from flash.image import ImageClassificationData, ImageClassifier
 from pytorch_lightning.callbacks.progress.base import ProgressBarBase
+from lightning.utilities.state import AppState
 
 app_state = sys.argv[1]
 
-class LitProgressBar(ProgressBarBase):
+class AppProgressBar(ProgressBarBase):
+
     def __init__(self):
-        super().__init__()  # don't forget this :)
-        self.enable = True
+        super().__init__()
+
+        self._total = 0
+
     def disable(self):
-        self.enable = False
+        pass
+
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
-        super().on_train_batch_end(trainer, pl_module, outputs, batch, batch_idx)  # don't forget this :)
-        percent = (self.train_batch_idx / self.total_train_batches)
-        app_state.progress = percent
+        super().on_train_batch_end(trainer, pl_module, outputs, batch, batch_idx)
+        app_state.progress = (self._total + self.train_batch_idx) / (self.total_train_batches * self.trainer.max_epochs)
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        super().on_train_epoch_end(trainer, pl_module)
+        self._total += self.total_train_batches
 
 {% if not rendering %}
 import os
@@ -32,7 +40,7 @@ datamodule = ImageClassificationData.from_{{ method }}(
 
 model = ImageClassifier(backbone="{{ model_config.backbone }}", learning_rate={{ model_config.learning_rate }}, labels=datamodule.labels)
 
-trainer = flash.Trainer(max_epochs=1, limit_val_batches=10, callbacks=[LitProgressBar()])
+trainer = flash.Trainer(max_epochs=1, limit_val_batches=10, callbacks=[AppProgressBar()])
 trainer.finetune(model, datamodule=datamodule, strategy="freeze")
 
 {% if not rendering %}

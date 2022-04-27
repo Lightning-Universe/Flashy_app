@@ -137,6 +137,7 @@ def render_fn(state: AppState) -> None:
 
     if state.results or state.generated_runs:
         spinners = []
+        refresh = False
 
         results = state.results
 
@@ -144,22 +145,16 @@ def render_fn(state: AppState) -> None:
             results = {run["id"]: (run, "launching") for run in state.generated_runs}
 
         keys = results[next(iter(results.keys()))][0]["model_config"].keys()
-        columns = st.columns(len(keys) + 4)
-
-        with columns[0]:
-            st.write("### ID")
-
-            for result in results.values():
-                st.write(result[0]["id"])
+        columns = st.columns(len(keys) + 2)
 
         for idx, key in enumerate(keys):
-            with columns[idx + 1]:
+            with columns[idx]:
                 st.write(f"### {key}")
 
                 for result in results.values():
                     st.write(result[0]["model_config"][key])
 
-        with columns[-3]:
+        with columns[-2]:
             st.write("### Performance")
 
             for result in results.values():
@@ -168,21 +163,12 @@ def render_fn(state: AppState) -> None:
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
                 elif result[1] == "started":
-                    spinner_context = st.spinner("Running...")
-                    spinner_context.__enter__()
-                    spinners.append(spinner_context)
+                    progress = getattr(getattr(state.runs, f"work_{result[0]['id']}", None), "progress", None)
+                    state.runs_progress[result[0]['id']] = progress or 0.0
+                    st.progress(state.runs_progress[result[0]['id']])
+                    refresh = True
                 else:
                     st.write(result[1])
-
-        with columns[-2]:
-            st.write("### Progress")
-
-            for result in results.values():
-                progress = getattr(getattr(state.runs, f"work_{result[0]['id']}", None), "progress", None)
-                progress = progress or 0.0
-                old_progress = state.runs_progress.get(result[0]['id'], progress)
-                state.runs_progress[result[0]['id']] = progress if progress > old_progress else old_progress
-                st.progress(state.runs_progress[result[0]['id']])
 
         with columns[-1]:
             st.write("### FiftyOne")
@@ -217,7 +203,7 @@ def render_fn(state: AppState) -> None:
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
 
-        if spinners or state.explore_id != state.fo.run_id:
+        if refresh or spinners or state.explore_id != state.fo.run_id:
             time.sleep(0.5)
             _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
             raise RerunException(RerunData())

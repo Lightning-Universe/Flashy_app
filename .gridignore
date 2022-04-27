@@ -160,3 +160,5 @@ lightning_logs
 .storage/
 .vscode
 .shared/
+
+*.pt
