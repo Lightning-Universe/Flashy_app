@@ -29,6 +29,9 @@ def add_flashy_styles(render_fn):
                 .stButton>button {{
                     height: 25.59px;
                 }}
+                .stDownloadButton>button {{
+                    height: 25.59px;
+                }}
                 * {{
                     font-size: 100%;
                     font-family: Courier;

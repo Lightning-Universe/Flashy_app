@@ -2,13 +2,14 @@ import functools
 import os
 import os.path
 import sys
+import time
 from typing import Any, Dict, List, Optional
 import logging
 
 from jinja2 import Environment, FileSystemLoader
 from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
-from lightning.storage.path import Path
+from lightning.storage.path import Path, PathGetRequest, filesystem, shared_storage_path
 
 
 @functools.lru_cache
@@ -46,18 +47,20 @@ class RunGeneratedScript(TracerPythonScript):
         super().__init__(__file__, blocking=False, raise_exception=True, **kwargs)
         self.script_dir = None
         self.run_dict = None
-        self.best_model_path: Optional[Path] = None
+        self.last_model_path: Optional[Path] = None
+        self.last_model_path_source = None
+        self.env = None
         self.monitor = None
         self.progress = None
 
     def run(self, script_dir: str, run_dict: Dict[str, str]):
         self.script_dir = script_dir
         self.run_dict = run_dict
-        print(f"Generating script in: {script_dir}")
+        logging.info(f"Generating script in: {script_dir}")
         self.script_path = _generate_script(
             script_dir, run_dict, f"{run_dict['task']}.jinja", rendering=False
         )
-        print(f"Running script: {self.script_path}")
+        logging.info(f"Running script: {self.script_path}")
         super().run()
 
     def _run_tracer(self):
@@ -67,10 +70,37 @@ class RunGeneratedScript(TracerPythonScript):
 
     def on_after_run(self, res):
         self.monitor = float(res["trainer"].callback_metrics["val_accuracy"].item())
-        self.best_model_path = Path(
+        self.last_model_path = Path(
             os.path.join(self.script_dir, f"{self.run_dict['id']}.pt")
         )
-        logging.info(f"Stored best model path: {self.best_model_path}")
+        logging.info(f"Stored last model path: {self.last_model_path}")
+
+        # Transfer Path to Storage
+        path = Path(self.last_model_path)
+        path._attach_work(self)
+        path._attach_queues(self._request_queue, self._response_queue)
+
+        request = PathGetRequest(source=path.origin_name, path=str(path), hash=path.hash)
+        path._request_queue.put(request)
+
+        _ = path._response_queue.get()  # blocking
+
+        fs = filesystem()
+        source_path = shared_storage_path() / path.hash
+
+        while not fs.exists(source_path):
+            # TODO: Existence check on folder is not enough, files may not be completely transferred yet
+            time.sleep(0.5)
+
+        self.last_model_path_source = str(source_path)
+
+        self.env = {
+            "LIGHTNING_BUCKET_ENDPOINT_URL": os.getenv("LIGHTNING_BUCKET_ENDPOINT_URL", ""),
+            "LIGHTNING_BUCKET_NAME": os.getenv("LIGHTNING_BUCKET_NAME", ""),
+            "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID", ""),
+            "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY", ""),
+            "LIGHTNING_CLOUD_APP_ID": os.getenv("LIGHTNING_CLOUD_APP_ID", ""),
+        }
 
 
 class RunScheduler(LightningFlow):
