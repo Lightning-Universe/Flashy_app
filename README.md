@@ -11,12 +11,21 @@
 To run the app, execute the following commands:
 
 ```bash
-conda create --name automl python=3.8
-conda activate automl
-git clone https://github.com/PyTorchLightning/automl_app
-cd automl_app
+conda create --name lightning python=3.8
+conda activate lightning
+
+git clone https://github.com/PyTorchLightning/lightning
+cd lightning
+git checkout auto_ml_custom_image
+pip install -r requirements.txt
+pip install -e .
+python scripts/download_frontend.py
+
+cd ../
+git clone https://github.com/PyTorchLightning/lightning-auto-ml
+cd lightning-auto-ml
 pip install -r requirements.txt
 pip install -e .
 
-lightning start app flashy/app.py
+lightning run app app.py
 ```
