@@ -11,6 +11,18 @@ from sentence_transformers import util
 
 from flashy.utilities import add_flashy_styles
 
+_DEMOS = {
+    "ants & bees": (
+        "image_classification",
+        {
+            "url": "https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip",
+            "target": "from_folders",
+            "train_folder": "hymenoptera_data/train/",
+            "val_folder": "hymenoptera_data/val/",
+        },
+    )
+}
+
 
 @functools.lru_cache()
 def get_embeddings_embedder():
@@ -28,7 +40,7 @@ class TaskSelector(LightningFlow):
         super().__init__()
 
         self.selected_task = None
-        self.question = None
+        self.defaults = None
 
     def run(self) -> None:
         pass
@@ -65,16 +77,27 @@ def render_fn(state: AppState) -> None:
     st.write("![logo](https://grid-hackthon.s3.amazonaws.com/flashy/logo.png)")
 
     st.markdown(
-        '<p style="font-family:Courier; font-size: 25px;">What do you want to build?</p>',
+        '<p style="font-family:Courier; font-size: 25px;">Choose a pre-configured demo:</p>',
+        unsafe_allow_html=True,
+    )
+
+    selected_demo = st.radio("", _DEMOS.keys())
+
+    state.selected_task, state.defaults = _DEMOS[selected_demo]
+
+    st.markdown(
+        '<p style="font-family:Courier; font-size: 25px;">or describe what you want to build:</p>',
         unsafe_allow_html=True,
     )
 
     question = st.text_input(
         "",
-        placeholder="e.g. detect mask wearing in images",
+        placeholder="e.g. an ants bees classifier",
     )
 
     if question:
+        state.selected_task = None
+        state.defaults = None
         with st.spinner("Loading..."):
             suggested_tasks = get_suggested_tasks(question)
     else:
@@ -86,10 +109,3 @@ def render_fn(state: AppState) -> None:
             unsafe_allow_html=True,
         )
         state.selected_task = st.radio("", suggested_tasks)
-
-        st.write(
-            """
-            Now <a href="http://127.0.0.1:7501/view/Data" target="_parent">configure your data!</a>
-        """,
-            unsafe_allow_html=True,
-        )

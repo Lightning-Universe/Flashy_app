@@ -11,7 +11,7 @@ os.chdir("{{ root }}")
 # 1 Download data
 download_data("{{ url }}", ".")
 
-datamodule = ImageClassificationData.from_{{ method }}(
+datamodule = ImageClassificationData.{{ method }}(
     {% for key, value in data_config.items() %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %}
     batch_size=4,
     transform_kwargs={"image_size": (196, 196), "mean": (0.485, 0.456, 0.406), "std": (0.229, 0.224, 0.225)},

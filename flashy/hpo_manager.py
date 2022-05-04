@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -6,12 +7,11 @@ import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.storage import Path
-from lightning.storage.path import PathGetRequest, filesystem, shared_storage_path
+from lightning.storage.path import filesystem
 from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
-import os
 
 from flashy.fiftyone_scheduler import FiftyOneScheduler
 from flashy.run_scheduler import RunScheduler
@@ -71,18 +71,18 @@ class HPOManager(LightningFlow):
 
         self.env = None
 
-    def run(self, selected_task: str, url, method, data_config):
+    def run(self, selected_task: str, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
         if self.generated_runs is not None:
             self.has_run = True
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
-                run["url"] = url
-                run["method"] = method
+                run["url"] = data_config.pop("url")
+                run["method"] = data_config.pop("target")
                 run["data_config"] = data_config
 
-                self.results[run['id']] = (run, "launching", None)
+                self.results[run["id"]] = (run, "launching", None)
                 logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
@@ -94,11 +94,15 @@ class HPOManager(LightningFlow):
             if run_work.has_succeeded:
                 # HACK!!!
                 self.env = run_work.env
-                self.results[run['id']] = (run, run_work.monitor, run_work.last_model_path_source)
+                self.results[run["id"]] = (
+                    run,
+                    run_work.monitor,
+                    run_work.last_model_path_source,
+                )
             elif run_work.has_failed:
-                self.results[run['id']] = (run, "Failed", None)
+                self.results[run["id"]] = (run, "Failed", None)
             elif run_work.has_started:
-                self.results[run['id']] = (run, "started", None)
+                self.results[run["id"]] = (run, "started", None)
 
         if self.explore_id is not None:
             result = self.results[self.explore_id]
@@ -118,19 +122,28 @@ class HPOManager(LightningFlow):
 def render_fn(state: AppState) -> None:
     st.title("Build your model!")
 
-    quality = st.select_slider("Model type", _search_spaces[state.selected_task].keys())
+    quality = st.select_slider(
+        "Model type",
+        _search_spaces.get(state.selected_task, {}).keys(),
+        disabled=state.selected_task not in _search_spaces,
+    )
 
-    performance = st.select_slider("Target performance", ("low", "medium", "high"))
+    performance = st.select_slider(
+        "Target performance",
+        ("low", "medium", "high"),
+        disabled=state.selected_task not in _search_spaces,
+    )
 
     start_training_placeholder = st.empty()
     start_runs = start_training_placeholder.button(
-        "Start training!", disabled=state.has_run or state.generated_runs is not None
+        "Start training!",
+        disabled=state.has_run
+        or state.generated_runs is not None
+        or state.selected_task not in _search_spaces,
     )
 
     if start_runs:
-        start_training_placeholder.button(
-            "Start training!", disabled=True
-        )
+        start_training_placeholder.button("Start training!", disabled=True)
         performance_runs = {
             "low": 1,
             "medium": 5,
@@ -151,7 +164,9 @@ def render_fn(state: AppState) -> None:
         results = state.results
 
         if not results:
-            results = {run["id"]: (run, "launching", "") for run in state.generated_runs}
+            results = {
+                run["id"]: (run, "launching", "") for run in state.generated_runs
+            }
 
         keys = results[next(iter(results.keys()))][0]["model_config"].keys()
         columns = st.columns(len(keys) + 3)
@@ -172,9 +187,13 @@ def render_fn(state: AppState) -> None:
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
                 elif result[1] == "started":
-                    progress = getattr(getattr(state.runs, f"work_{result[0]['id']}", None), "progress", None)
-                    state.runs_progress[result[0]['id']] = progress or 0.0
-                    st.progress(state.runs_progress[result[0]['id']])
+                    progress = getattr(
+                        getattr(state.runs, f"work_{result[0]['id']}", None),
+                        "progress",
+                        None,
+                    )
+                    state.runs_progress[result[0]["id"]] = progress or 0.0
+                    st.progress(state.runs_progress[result[0]["id"]])
                     refresh = True
                 else:
                     st.write(result[1])
@@ -190,17 +209,26 @@ def render_fn(state: AppState) -> None:
                 elif result[1] in ["launching", "started"]:
                     st.write("Waiting")
                 else:
-                    fiftyone_buttons.append((result, st.button(
-                        "Explore!",
-                        key=result[0]["id"],
-                        disabled=state.explore_id == result[0]["id"],
-                    )))
+                    fiftyone_buttons.append(
+                        (
+                            result,
+                            st.button(
+                                "Explore!",
+                                key=result[0]["id"],
+                                disabled=state.explore_id == result[0]["id"],
+                            ),
+                        )
+                    )
 
             for (result, button) in fiftyone_buttons:
                 if button:
                     state.explore_id = result[0]["id"]
 
-                if state.explore_id == result[0]["id"] and state.fo.ready and state.fo.run_id == result[0]["id"]:
+                if (
+                    state.explore_id == result[0]["id"]
+                    and state.fo.ready
+                    and state.fo.run_id == result[0]["id"]
+                ):
                     st.write(
                         """
                         <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
@@ -231,15 +259,20 @@ def render_fn(state: AppState) -> None:
                     # if not os.path.exists(result[2]):
                     #     logging.error(f"Checkpoint file at: {result[2]} not found.")
                     if fs is not None:
-                        with fs.open(result[2], 'rb') as ckpt_file:
+                        with fs.open(result[2], "rb") as ckpt_file:
                             st.download_button(
                                 data=ckpt_file.read(),
-                                file_name="checkpoint_"+str(result[0]["id"])+".ckpt",
+                                file_name="checkpoint_"
+                                + str(result[0]["id"])
+                                + ".ckpt",
                                 label="Download",
                                 key=str(result[0]["id"]),
                             )
 
         if refresh or spinners or state.explore_id != state.fo.run_id:
             time.sleep(0.5)
-            _ = [spinner_context.__exit__(None, None, None) for spinner_context in spinners]
+            _ = [
+                spinner_context.__exit__(None, None, None)
+                for spinner_context in spinners
+            ]
             raise RerunException(RerunData())

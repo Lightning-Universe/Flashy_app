@@ -3,11 +3,11 @@ import sys
 
 sys.path.append(os.path.dirname(__file__))
 
-from lightning import LightningApp, LightningFlow
+from lightning import LightningApp, LightningFlow  # noqa: E402
 
-from flashy.data_manager import DataManager
-from flashy.task_selector import TaskSelector
-from flashy.hpo_manager import HPOManager
+from flashy.data_manager import DataManager  # noqa: E402
+from flashy.hpo_manager import HPOManager  # noqa: E402
+from flashy.task_selector import TaskSelector  # noqa: E402
 
 
 class Flashy(LightningFlow):
@@ -25,13 +25,11 @@ class Flashy(LightningFlow):
 
         if self.task_selector.selected_task is not None:
             selected_task = self.task_selector.selected_task
-            self.data.run(selected_task)
+            self.data.run(selected_task, self.task_selector.defaults)
 
-            if self.data.config is not None:
+            if self.data.config:
                 self.hpo.run(
-                    self.data.selected_task,
-                    self.data.url,
-                    self.data.method,
+                    selected_task,
                     self.data.config,
                 )
 
