@@ -2,11 +2,10 @@ from typing import Any, Dict, Optional
 
 import streamlit as st
 from flash.image import ImageClassificationData
-from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
-from flashy.components.dynamic_frontend import dynamic_frontend
+from flashy.components.dynamic_frontend import LightningFlowDynamic
 from flashy.components.streamlit_auto_config import StreamlitAutoConfig
 from flashy.utilities import add_flashy_styles
 
@@ -18,7 +17,7 @@ _TARGETS = {
 }
 
 
-class DataManager(LightningFlow):
+class DataManager(LightningFlowDynamic):
     """The DataManager allows a user to configure the data module options for their task.
 
     Note:: We assume that users will provide validation data.
@@ -31,16 +30,11 @@ class DataManager(LightningFlow):
         self.selected_task: Optional[str] = None
         self.defaults: Optional[Dict] = None
 
-        self._frontend = None
-        self._host = None
-        self._port = None
-
     def run(self, selected_task: str, defaults: Optional[Dict]):
         self.selected_task = selected_task.lower().replace(" ", "_")
         self.defaults = defaults
         self.config = defaults or {}
 
-    @dynamic_frontend
     def configure_layout(self):
         if self.selected_task is not None:
             if self.selected_task in _TARGETS:
@@ -50,8 +44,7 @@ class DataManager(LightningFlow):
                     defaults=self.defaults,
                     ignore=["test*", "predict*"],
                 )
-            else:
-                return StreamlitFrontend(render_fn_unsupported)
+        return StreamlitFrontend(render_fn_unsupported)
 
 
 @add_flashy_styles
