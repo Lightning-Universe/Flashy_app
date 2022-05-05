@@ -1,14 +1,23 @@
 from typing import Any, Dict, Optional
 
 import streamlit as st
-from lightning import LightningFlow
+from flash.image import ImageClassificationData
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
+from flashy.components.dynamic_frontend import LightningFlowDynamic
+from flashy.components.streamlit_auto_config import StreamlitAutoConfig
 from flashy.utilities import add_flashy_styles
 
+_TARGETS = {
+    "image_classification": [
+        ImageClassificationData.from_folders,
+        ImageClassificationData.from_csv,
+    ]
+}
 
-class DataManager(LightningFlow):
+
+class DataManager(LightningFlowDynamic):
     """The DataManager allows a user to configure the data module options for their task.
 
     Note:: We assume that users will provide validation data.
@@ -17,60 +26,38 @@ class DataManager(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        self.url: Optional[str] = None
-        self.method: Optional[str] = None
-        self.config: Optional[Dict[str, Any]] = None
+        self.config: Optional[Dict[str, Any]] = {}
         self.selected_task: Optional[str] = None
+        self.defaults: Optional[Dict] = None
 
-    def run(self, selected_task: str):
+    def run(self, selected_task: str, defaults: Optional[Dict]):
         self.selected_task = selected_task.lower().replace(" ", "_")
+        self.defaults = defaults
+        self.config = defaults or {}
 
     def configure_layout(self):
-        return StreamlitFrontend(render_fn=render_fn)
+        if self.selected_task is not None:
+            if self.selected_task in _TARGETS:
+                return StreamlitAutoConfig(
+                    _TARGETS[self.selected_task],
+                    render_fn,
+                    defaults=self.defaults,
+                    ignore=["test*", "predict*"],
+                )
+        return StreamlitFrontend(render_fn_unsupported)
+
+
+@add_flashy_styles
+def render_fn_unsupported(state: AppState) -> None:
+    st.write("Currently only `image_classification` is supported.")
 
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
     st.title(f"Load your data! {state.selected_task}")
 
-    # TODO: Auto-generate this
-    if state.selected_task == "image_classification":
-        state.url = st.text_input(
-            "Data URL", "https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip"
-        )
+    url = st.text_input("Data URL", (state.defaults or {}).get("url", ""))
 
-        state.method = st.selectbox("Data format", options=["folders", "csv"])
-
-        if state.method == "folders":
-            train_folder = st.text_input("Train folder", "hymenoptera_data/train/")
-            val_folder = st.text_input("Validation folder", "hymenoptera_data/val/")
-            if train_folder and val_folder:
-                state.config = {
-                    "train_folder": train_folder,
-                    "val_folder": val_folder,
-                }
-        elif state.method == "csv":
-            train_file = st.text_input("Train file")
-            val_file = st.text_input("Validation file")
-            if train_file and val_file:
-                state.config = {
-                    "train_file": train_file,
-                    "val_file": val_file,
-                }
-    else:
-        st.write("Currently only `image_classification` is supported.")
-
-        st.write(
-            """
-            <a href="http://127.0.0.1:7501/view/Task" target="_parent">Go back</a>
-        """,
-            unsafe_allow_html=True,
-        )
-
-    if state.config is not None:
-        st.write(
-            """
-            Now <a href="http://127.0.0.1:7501/view/Model" target="_parent">set-up your model!</a>
-        """,
-            unsafe_allow_html=True,
-        )
+    # TODO: Figure out why dict in state can't be mutated
+    if url:
+        state.config = {"url": url, **state.config}
