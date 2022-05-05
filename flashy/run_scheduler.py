@@ -1,15 +1,20 @@
 import functools
+import logging
 import os
 import os.path
 import sys
 import time
 from typing import Any, Dict, List, Optional
-import logging
 
 from jinja2 import Environment, FileSystemLoader
 from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
-from lightning.storage.path import Path, PathGetRequest, filesystem, shared_storage_path
+from lightning.storage.path import (
+    Path,
+    PathGetRequest,
+    filesystem,
+    path_to_artifacts_path_work_name,
+)
 
 
 @functools.lru_cache
@@ -80,13 +85,15 @@ class RunGeneratedScript(TracerPythonScript):
         path._attach_work(self)
         path._attach_queues(self._request_queue, self._response_queue)
 
-        request = PathGetRequest(source=path.origin_name, path=str(path), hash=path.hash)
+        request = PathGetRequest(
+            source=path.origin_name, path=str(path), hash=path.hash
+        )
         path._request_queue.put(request)
 
-        _ = path._response_queue.get()  # blocking
+        response = path._response_queue.get()  # blocking
 
         fs = filesystem()
-        source_path = shared_storage_path() / path.hash
+        source_path = path_to_artifacts_path_work_name(path, response.source)
 
         while not fs.exists(source_path):
             # TODO: Existence check on folder is not enough, files may not be completely transferred yet
@@ -95,7 +102,9 @@ class RunGeneratedScript(TracerPythonScript):
         self.last_model_path_source = str(source_path)
 
         self.env = {
-            "LIGHTNING_BUCKET_ENDPOINT_URL": os.getenv("LIGHTNING_BUCKET_ENDPOINT_URL", ""),
+            "LIGHTNING_BUCKET_ENDPOINT_URL": os.getenv(
+                "LIGHTNING_BUCKET_ENDPOINT_URL", ""
+            ),
             "LIGHTNING_BUCKET_NAME": os.getenv("LIGHTNING_BUCKET_NAME", ""),
             "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID", ""),
             "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY", ""),
@@ -109,5 +118,7 @@ class RunScheduler(LightningFlow):
         for run in queued_runs:
             run_work = RunGeneratedScript()
             setattr(self, f"work_{run['id']}", run_work)
-            logging.info(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
+            logging.info(
+                f"Launching run: {run['id']}. Run work `run` method: {run_work.run}."
+            )
             run_work.run(".", run)
