@@ -11,13 +11,7 @@ from flashy.run_scheduler import _generate_script
 
 class FiftyOneTemplateTracer(TracerPythonScript):
     def __init__(self):
-        super().__init__(
-            __file__,
-            blocking=True,
-            run_once=False,
-            exposed_ports={"fiftyone": 5151},
-            raise_exception=True,
-        )
+        super().__init__(__file__, blocking=True, run_once=False, port=5151)
 
         self._session = None
 

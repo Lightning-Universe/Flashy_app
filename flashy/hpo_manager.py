@@ -114,8 +114,8 @@ class HPOManager(LightningFlow):
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
 
-    def exposed_url(self, key: str) -> str:
-        return self.fo.work.exposed_url(key)
+    def exposed_url(self) -> str:
+        return self.fo.work.url
 
 
 @add_flashy_styles
