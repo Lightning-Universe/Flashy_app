@@ -1,7 +1,8 @@
 import sys
 import flash
 from flash.core.data.utils import download_data
-from flash.image import ImageClassificationData, ImageClassifier
+from {{ data_module_import_path }} import {{ data_module_class }}
+from {{ task_import_path }} import {{ task_class }}
 from pytorch_lightning.callbacks.progress.base import ProgressBarBase
 from lightning.utilities.state import AppState
 
@@ -25,27 +26,17 @@ class AppProgressBar(ProgressBarBase):
         super().on_train_epoch_end(trainer, pl_module)
         self._total += self.total_train_batches
 
-{% if not rendering %}
-import os
-os.chdir("{{ root }}")
-{% endif %}
-
 download_data("{{ url }}", ".")
 
-datamodule = ImageClassificationData.{{ method }}(
-    {% for key, value in data_config.items() %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %}
+datamodule = {{ data_module_class }}.{{ data_config["target"] }}(
+    {% for key, value in data_config.items() if key != "target" %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %}
     batch_size=4,
-    transform_kwargs={"image_size": (196, 196), "mean": (0.485, 0.456, 0.406), "std": (0.229, 0.224, 0.225)},
 )
 
-model = ImageClassifier(backbone="{{ model_config.backbone }}", learning_rate={{ model_config.learning_rate }}, labels=datamodule.labels)
+model = {{ task_class }}(
+    {% for key, value in task_config.items() %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %}
+    {% for linked_attribute in linked_attributes %}{{ linked_attribute }}=datamodule.{{ linked_attribute }},{% endfor %}
+)
 
-trainer = flash.Trainer(max_epochs=1, limit_val_batches=10, callbacks=[AppProgressBar()])
+trainer = flash.Trainer(max_epochs=1, callbacks=[AppProgressBar()], default_root_dir="{{ root }}", limit_train_batches=1, limit_val_batches=1)
 trainer.finetune(model, datamodule=datamodule, strategy="freeze")
-
-{% if not rendering %}
-import os
-trainer.save_checkpoint(os.path.join("{{ root }}", "{{ run_id }}.pt"))
-with open(os.path.join("{{ root }}", '{{ run_id }}.txt'), 'w') as f:
-    f.write(f"{trainer.callback_metrics['val_accuracy']}")
-{% endif %}
