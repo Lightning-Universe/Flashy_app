@@ -53,7 +53,6 @@ class HPOManager(LightningFlow):
         super().__init__()
 
         self.has_run = False
-        self.started = False
 
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
@@ -159,7 +158,6 @@ def render_fn(state: AppState) -> None:
 
     if state.results or state.generated_runs:
         spinners = []
-        refresh = False
 
         results = state.results
 
@@ -194,7 +192,6 @@ def render_fn(state: AppState) -> None:
                     )
                     state.runs_progress[result[0]["id"]] = progress or 0.0
                     st.progress(state.runs_progress[result[0]["id"]])
-                    refresh = True
                 else:
                     st.write(result[1])
 
@@ -256,8 +253,6 @@ def render_fn(state: AppState) -> None:
                 elif result[1] in ["launching", "started"]:
                     st.write("Waiting...")
                 else:
-                    # if not os.path.exists(result[2]):
-                    #     logging.error(f"Checkpoint file at: {result[2]} not found.")
                     if fs is not None:
                         with fs.open(result[2], "rb") as ckpt_file:
                             st.download_button(
@@ -269,7 +264,7 @@ def render_fn(state: AppState) -> None:
                                 key=str(result[0]["id"]),
                             )
 
-        if refresh or spinners or state.explore_id != state.fo.run_id:
+        if spinners:
             time.sleep(0.5)
             _ = [
                 spinner_context.__exit__(None, None, None)
