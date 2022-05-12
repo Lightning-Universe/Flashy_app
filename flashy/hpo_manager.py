@@ -31,7 +31,13 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
             "backbone": tune.choice(["resnet101", "efficientnet_b4"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
         },
-    }
+    },
+    "text_classification": {
+        "demo": {
+            "backbone": tune.choice(["resnet18", "efficientnet_b0"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+    },
 }
 
 

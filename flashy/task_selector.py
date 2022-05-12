@@ -20,7 +20,16 @@ _DEMOS = {
             "train_folder": "hymenoptera_data/train/",
             "val_folder": "hymenoptera_data/val/",
         },
-    )
+    ),
+    "IMDB Text Classification": (
+        "text_classification",
+        {
+            "url": "https://pl-flash-data.s3.amazonaws.com/imdb.zip",
+            "target": "from_csv",
+            "train_file": "imdb/train.csv",
+            "val_file": "imdb/valid.csv",
+        },
+    ),
 }
 
 

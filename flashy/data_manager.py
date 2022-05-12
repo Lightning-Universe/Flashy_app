@@ -2,6 +2,7 @@ from typing import Any, Dict, Optional
 
 import streamlit as st
 from flash.image import ImageClassificationData
+from flash.text import TextClassificationData
 from lightning.frontend import StreamlitFrontend
 from lightning.utilities.state import AppState
 
@@ -13,6 +14,10 @@ _TARGETS = {
     "image_classification": [
         ImageClassificationData.from_folders,
         ImageClassificationData.from_csv,
+    ],
+    "text_classification": [
+        TextClassificationData.from_folders,
+        TextClassificationData.from_csv,
     ]
 }
 

@@ -1,0 +1,20 @@
+import os
+
+import torch
+
+import flash
+from flash.core.data.utils import download_data
+from flash.text import TextClassificationData, TextClassifier
+
+os.chdir("{{ root }}")
+
+datamodule = TextClassificationData.from_lists(  
+  predict_data=[
+    "{{ text }}"
+  ],
+  batch_size=2
+)
+
+trainer = flash.Trainer()
+model = TextClassifier.load_from_checkpoint("{{ checkpoint }}")
+predictions = trainer.predict(model, datamodule=datamodule, output="labels")
