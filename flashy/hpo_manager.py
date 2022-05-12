@@ -79,7 +79,7 @@ class HPOManager(LightningFlow):
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
                 run["url"] = data_config.pop("url")
-                run["method"] = data_config.pop("target")
+
                 run["data_config"] = data_config
 
                 self.results[run["id"]] = (run, "launching", None)

@@ -1,14 +1,13 @@
 import logging
-import os
 from typing import Any, Dict
 
-import torch
 from flash.core.integrations.fiftyone import visualize
 from lightning import LightningFlow
 from lightning.components.python import TracerPythonScript
 from lightning.storage.path import Path
 
 from flashy.run_scheduler import _generate_script
+
 
 class FiftyOneTemplateTracer(TracerPythonScript):
     def __init__(self):
@@ -48,7 +47,9 @@ class FiftyOneScheduler(LightningFlow):
         self.ready = False
 
         if run["id"] != self.run_id:
-            logging.info(f"Launching FiftyOne with path: {checkpoint}, of type: {type(checkpoint)}")
+            logging.info(
+                f"Launching FiftyOne with path: {checkpoint}, of type: {type(checkpoint)}"
+            )
             self.run_id = run["id"]
             self.work.run(run, checkpoint)
 
