@@ -1,4 +1,3 @@
-import functools
 import logging
 import os
 import os.path
@@ -6,10 +5,8 @@ import shutil
 import sys
 import tempfile
 import time
-from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
-from jinja2 import Environment, FileSystemLoader
 from lightning.components.python import TracerPythonScript
 from lightning.storage.path import (
     Path,
@@ -18,63 +15,9 @@ from lightning.storage.path import (
     path_to_artifacts_path_work_name,
 )
 
-import flashy
-
-
-@dataclass
-class _TaskMeta:
-    data_module_import_path: str
-    data_module_class: str
-    task_import_path: str
-    task_class: str
-    linked_attributes: List[str]
-    monitor: str
-
-
-_tasks = {
-    "image_classification": _TaskMeta(
-        "flash.image",
-        "ImageClassificationData",
-        "flash.image",
-        "ImageClassifier",
-        ["num_classes", "labels", "multi_label"],
-        "val_accuracy",
-    )
-}
-
-
-@functools.lru_cache
-def _get_env():
-    return Environment(loader=FileSystemLoader(flashy.TEMPLATES_ROOT))
-
-
-def _generate_script(
-    path,
-    template_file,
-    task,
-    task_meta,
-    url,
-    data_config,
-    task_config,
-):
-    template = _get_env().get_template(os.path.join(template_file))
-
-    variables = dict(
-        root=os.path.dirname(path),
-        task=task,
-        data_module_import_path=task_meta.data_module_import_path,
-        data_module_class=task_meta.data_module_class,
-        task_import_path=task_meta.task_import_path,
-        task_class=task_meta.task_class,
-        linked_attributes=task_meta.linked_attributes,
-        url=url,
-        data_config=data_config,
-        task_config=task_config,
-    )
-
-    with open(path, "w") as f:
-        logging.info(f"Rendering {template_file} with variables: {variables}")
-        f.write(template.render(**variables))
+from flashy.components import tasks
+from flashy.components.tasks import TaskMeta
+from flashy.components.utilities import generate_script
 
 
 class FlashTrainer(TracerPythonScript):
@@ -87,7 +30,7 @@ class FlashTrainer(TracerPythonScript):
         self.env = None
         self.monitor = None
         self.progress = None
-        self._task_meta: Optional[_TaskMeta] = None
+        self._task_meta: Optional[TaskMeta] = None
 
     def run(
         self,
@@ -100,16 +43,20 @@ class FlashTrainer(TracerPythonScript):
 
         self.script_path = os.path.join(self.script_dir, "flash_training.py")
 
-        self._task_meta = _tasks[task]
+        self._task_meta = getattr(tasks, task)
 
-        _generate_script(
+        generate_script(
             self.script_path,
             "flash_training.jinja",
-            task,
-            self._task_meta,
-            url,
-            data_config,
-            task_config,
+            task=task,
+            data_module_import_path=self._task_meta.data_module_import_path,
+            data_module_class=self._task_meta.data_module_class,
+            task_import_path=self._task_meta.task_import_path,
+            task_class=self._task_meta.task_class,
+            linked_attributes=self._task_meta.linked_attributes,
+            url=url,
+            data_config=data_config,
+            task_config=task_config,
         )
         logging.info(f"Running script: {self.script_path}")
         super().run()
