@@ -16,7 +16,6 @@ class FiftyOneTemplateTracer(TracerPythonScript):
         self._session = None
 
     def run(self, run: Dict[str, Any], checkpoint: Path):
-        logging.info("Reached!")
         self.script_path = _generate_script(
             ".", run, f"{run['task']}_fiftyone.jinja", checkpoint=str(checkpoint)
         )
