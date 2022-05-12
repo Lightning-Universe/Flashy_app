@@ -53,7 +53,7 @@ class FlashFiftyOne(TracerPythonScript):
 
         predictions = res["predictions"]
 
-        self._session = visualize(predictions, remote=True, address="0.0.0.0")
+        self._session = visualize(predictions, remote=True, address=self.host)
 
         logging.info(f"Launched at URL: {self._session.url}")
 
