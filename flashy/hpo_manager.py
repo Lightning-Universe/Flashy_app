@@ -35,8 +35,15 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
     },
     "text_classification": {
         "demo": {
-            # "backbone": tune.choice(["prajjwal1/bert-medium", "palakagl/bert_TextClassification"]),
             "backbone": tune.choice(["prajjwal1/bert-tiny"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+        "regular": {
+            "backbone": tune.choice(["prajjwal1/bert-medium"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+        "state-of-the-art!": {
+            "backbone": tune.choice(["prajjwal1/bert-medium"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
         },
     },
@@ -134,6 +141,11 @@ class HPOManager(LightningFlow):
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
+    if "text" in state.selected_task:
+        current = state.gr
+    else:
+        current = state.fo
+
     st.title("Build your model!")
 
     quality = st.select_slider(
@@ -213,7 +225,7 @@ def render_fn(state: AppState) -> None:
                     st.write(result[1])
 
         with columns[-2]:
-            st.write("### FiftyOne")
+            st.write("### Explore")
 
             fiftyone_buttons = []
 
@@ -240,8 +252,8 @@ def render_fn(state: AppState) -> None:
 
                 if (
                     state.explore_id == result[0]["id"]
-                    and state.fo.ready
-                    and state.fo.run_id == result[0]["id"]
+                    and current.ready
+                    and current.run_id == result[0]["id"]
                 ):
                     st.write(
                         """
@@ -270,8 +282,6 @@ def render_fn(state: AppState) -> None:
                 elif result[1] in ["launching", "started"]:
                     st.write("Waiting...")
                 else:
-                    # if not os.path.exists(result[2]):
-                    #     logging.error(f"Checkpoint file at: {result[2]} not found.")
                     if fs is not None:
                         with fs.open(result[2], "rb") as ckpt_file:
                             st.download_button(
@@ -283,7 +293,7 @@ def render_fn(state: AppState) -> None:
                                 key=str(result[0]["id"]),
                             )
 
-        if refresh or spinners or state.explore_id != state.fo.run_id:
+        if refresh or spinners or state.explore_id != current.run_id:
             time.sleep(0.5)
             _ = [
                 spinner_context.__exit__(None, None, None)

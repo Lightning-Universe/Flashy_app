@@ -12,27 +12,26 @@ from flashy.run_scheduler import _generate_script
 
 class GradioTemplateTracer(TracerPythonScript):
     def __init__(self):
-        super().__init__(__file__, blocking=True, run_once=True, port=5151)
+        super().__init__(__file__, blocking=True, run_once=False, port=5151)
 
         self._checkpoint = None
         self.share_url = None
+        self._run = None
+        self.launched = False
 
     def run(self, run: Dict[str, Any], checkpoint: Path):
         self._checkpoint = checkpoint
-        self.script_path = _generate_script(
-            ".",
-            run,
-            f"{run['task']}_gradio.jinja",
-            checkpoint=str(self._checkpoint),
-        )
-        super().run()
+        self._run = run
+        env_copy = os.environ.copy()
+        if self.env:
+            os.environ.update(self.env)
+        os.environ = env_copy
+        return self.on_after_run({})
 
     def on_after_run(self, res):
         sample_input = (
-            "Turgid dialogue, feeble characterization - Harvey Keitel a judge?. "
+            "Turgid dialogue, feeble characterization - Harvey Keitel a judge?."
         )
-        +"\n The worst movie in the history of cinema. \n"
-        +"I come from Bulgaria where it 's almost impossible to have a tornado."
         demo = gr.Interface(
             fn=self._apply,
             inputs=[
@@ -40,8 +39,12 @@ class GradioTemplateTracer(TracerPythonScript):
             ],
             outputs="text",
         )
-        _, path_to_local_server, self.share_url = demo.launch(
-            server_name="0.0.0.0", server_port=5151
+
+        # bad workaround?
+        self.launched = True
+        demo.launch(
+            server_name="0.0.0.0",
+            server_port=5151,
         )
 
         logging.info(
@@ -49,12 +52,14 @@ class GradioTemplateTracer(TracerPythonScript):
         )
 
     def _apply(self, text):
-        self._input_text = text
-        env_copy = os.environ.copy()
-        if self.env:
-            os.environ.update(self.env)
-        res = super()._run_tracer()
-        os.environ = env_copy
+        self.script_path = _generate_script(
+            ".",
+            self._run,
+            f"{self._run['task']}_gradio.jinja",
+            checkpoint=str(self._checkpoint),
+            input_text=str(text),
+        )
+        res = self._run_tracer()
         return res["predictions"]
 
 
@@ -77,5 +82,5 @@ class GradioScheduler(LightningFlow):
             self.run_id = run["id"]
             self.work.run(run, checkpoint)
 
-        if self.work.has_succeeded:
+        if self.work.launched:
             self.ready = True

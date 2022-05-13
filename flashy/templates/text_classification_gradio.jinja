@@ -8,14 +8,9 @@ from flash.text import TextClassificationData, TextClassifier
 
 os.chdir("{{ root }}")
 
-# 1 Download data
-download_data("{{ url }}", ".")
-
 datamodule = TextClassificationData.from_lists(
   predict_data=[
-    "Turgid dialogue, feeble characterization - Harvey Keitel a judge?.",
-    "The worst movie in the history of cinema.",
-    "I come from Bulgaria where it 's almost impossible to have a tornado.",
+    "{{ input_text }}"
   ],
   batch_size=4
 )

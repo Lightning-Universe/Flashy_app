@@ -35,7 +35,7 @@ class Flashy(LightningFlow):
 
     def configure_layout(self):
         data_explorer_url = self.hpo.exposed_url()
-        if (not self.hpo.fo.ready) and (not self.hpo.gr.ready):
+        if (not self.hpo.fo.ready) and (not self.hpo.gr.work.launched):
             data_explorer_url = "https://pl-flash-data.s3.amazonaws.com/assets_lightning/large_spinner.gif"
 
         return [
