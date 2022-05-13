@@ -42,7 +42,7 @@ datamodule = TextClassificationData.{{ method }}(
 
 model = TextClassifier(backbone="{{ model_config.backbone }}", learning_rate={{ model_config.learning_rate }}, labels=datamodule.labels)
 
-trainer = flash.Trainer(max_epochs=1, limit_val_batches=10, callbacks=[AppProgressBar()])
+trainer = flash.Trainer(max_epochs=1, limit_train_batches=1, limit_val_batches=1, callbacks=[AppProgressBar()])
 trainer.finetune(model, datamodule=datamodule, strategy="freeze")
 
 {% if not rendering %}

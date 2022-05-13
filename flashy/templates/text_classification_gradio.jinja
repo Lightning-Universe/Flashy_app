@@ -8,13 +8,19 @@ from flash.text import TextClassificationData, TextClassifier
 
 os.chdir("{{ root }}")
 
-datamodule = TextClassificationData.from_lists(  
+# 1 Download data
+download_data("{{ url }}", ".")
+
+datamodule = TextClassificationData.from_lists(
   predict_data=[
-    "{{ text }}"
+    "Turgid dialogue, feeble characterization - Harvey Keitel a judge?.",
+    "The worst movie in the history of cinema.",
+    "I come from Bulgaria where it 's almost impossible to have a tornado.",
   ],
-  batch_size=2
+  batch_size=4
 )
 
+# val_dataloader = datamodule.val_dataloader()
 trainer = flash.Trainer()
 model = TextClassifier.load_from_checkpoint("{{ checkpoint }}")
 predictions = trainer.predict(model, datamodule=datamodule, output="labels")

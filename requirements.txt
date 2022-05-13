@@ -4,3 +4,4 @@ fiftyone
 click==8
 streamlit==1.6.0
 jinja2
+gradio

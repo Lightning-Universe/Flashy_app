@@ -36,7 +36,7 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
     "text_classification": {
         "demo": {
             # "backbone": tune.choice(["prajjwal1/bert-medium", "palakagl/bert_TextClassification"]),
-            "backbone": tune.choice(["prajjwal1/bert-medium"]),
+            "backbone": tune.choice(["prajjwal1/bert-tiny"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
         },
     },
