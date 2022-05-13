@@ -34,7 +34,9 @@ os.chdir("{{ root }}")
 download_data("{{ url }}", ".")
 
 datamodule = TextClassificationData.{{ method }}(
-  {% for key, value in data_config.items() %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %},
+  {% for key, value in data_config.items() %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %}
+  input_field="review",
+  target_fields="sentiment",
   batch_size=4,
 )
 

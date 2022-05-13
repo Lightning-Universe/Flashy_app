@@ -16,7 +16,6 @@ _TARGETS = {
         ImageClassificationData.from_csv,
     ],
     "text_classification": [
-        TextClassificationData.from_folders,
         TextClassificationData.from_csv,
     ]
 }

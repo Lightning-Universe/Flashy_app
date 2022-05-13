@@ -3,7 +3,10 @@ import os
 from typing import Any, Dict, List
 
 from lightning.components.python import TracerPythonScript
+from lightning import LightningFlow
 from lightning.storage.path import Path
+
+from flashy.run_scheduler import _generate_script
 
 import gradio as gr
 
@@ -21,28 +24,32 @@ class GradioTemplateTracer(TracerPythonScript):
         self._instance = None
         self._input_text = None
         self._checkpoint = None
+        self.run = None
+        self.demo = None
 
     def run(self, run: Dict[str, Any], checkpoint: Path):
         self._checkpoint = checkpoint
+        self.run = run
         self._instance = self.gradio_interface(address="0.0.0.0", port=self.port)
+        super().run()
 
     def gradio_interface(self, address: str, port: int):
-        demo = gr.Interface(fn=self._apply, inputs="text", outputs="text")
-        demo.launch(server_name=address, server_port=port)
+        self.demo = gr.Interface(fn=self._apply, inputs="text", outputs="text")
 
     def _apply(self, text):
         self._input_text = text
-        self.script_path = _generate_script(
-            ".", run, f"{run['task']}_gradio.jinja", checkpoint=str(self._checkpoint), text_input=text
+        self.script_path = self._generate_script(
+            ".", self.run, f"{self.run['task']}_gradio.jinja", checkpoint=str(self._checkpoint), text_input=text
         )
-        super().run()
-        return res['predictions']
 
-    # def on_after_run(self, res):
-    #     logging.info("Launching Gradio")
-    #
-    #     # if self._instance is not None:
-    #     # self._instance.close()
+    def on_after_run(self, res):
+        logging.info("Launching Gradio")
+
+        self.demo.launch(server_name="0.0.0.0", server_port=self.port)
+        return res['predictions']
+    
+        # if self._instance is not None:
+        # self._instance.close()
 
 class GradioScheduler(LightningFlow):
     def __init__(self):
