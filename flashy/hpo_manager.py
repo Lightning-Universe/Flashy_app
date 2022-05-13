@@ -14,6 +14,7 @@ from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
 
 from flashy.fiftyone_scheduler import FiftyOneScheduler
+from flashy.gradio_scheduler import GradioScheduler
 from flashy.run_scheduler import RunScheduler
 from flashy.utilities import add_flashy_styles
 
@@ -73,6 +74,8 @@ class HPOManager(LightningFlow):
         self.runs: LightningFlow = RunScheduler()
 
         self.fo = FiftyOneScheduler()
+        self.gr = GradioScheduler()
+        # self.task_scheduler = None
 
         self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
 
@@ -80,6 +83,10 @@ class HPOManager(LightningFlow):
 
     def run(self, selected_task: str, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
+        if "text" in self.selected_task:
+            current = self.gr
+        else:
+            current = self.fo
 
         if self.generated_runs is not None:
             self.has_run = True
@@ -116,7 +123,7 @@ class HPOManager(LightningFlow):
             run_work = getattr(self.runs, f"work_{result[0]['id']}")
             path = Path(run_work.last_model_path)
             path._attach_work(run_work)
-            self.fo.run(result[0], path)
+            current.run(result[0], path)
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
