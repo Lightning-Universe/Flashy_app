@@ -26,6 +26,8 @@ _DEMOS = {
         {
             "url": "https://pl-flash-data.s3.amazonaws.com/imdb.zip",
             "target": "from_csv",
+            "input_field": "review",
+            "target_fields": "sentiment",
             "train_file": "imdb/train.csv",
             "val_file": "imdb/valid.csv",
         },

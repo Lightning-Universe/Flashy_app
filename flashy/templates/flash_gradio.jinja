@@ -1,0 +1,20 @@
+import torch
+
+import flash
+from flash.core.data.utils import download_data
+from {{ data_module_import_path }} import {{ data_module_class }}
+from {{ task_import_path }} import {{ task_class }}
+
+# 1 Download data
+# download_data("{{ url }}", ".")
+
+datamodule = {{ data_module_class }}.from_lists(
+    predict_data=[
+        "{{ input_text }}",
+    ],
+    batch_size=4,
+)
+
+trainer = flash.Trainer()
+model = {{ task_class }}.load_from_checkpoint("{{ checkpoint }}")
+predictions = trainer.predict(model, datamodule=datamodule, output="labels")

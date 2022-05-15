@@ -20,3 +20,12 @@ image_classification = TaskMeta(
     ["num_classes", "labels", "multi_label"],
     "val_accuracy",
 )
+
+text_classification = TaskMeta(
+    "flash.text",
+    "TextClassificationData",
+    "flash.text",
+    "TextClassifier",
+    ["num_classes", "labels", "multi_label"],
+    "val_accuracy",
+)
