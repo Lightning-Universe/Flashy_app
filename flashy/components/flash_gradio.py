@@ -52,7 +52,7 @@ class FlashGradio(TracerPythonScript):
 
     def on_after_run(self, res):
         logging.info(
-            "Launching a Gradio server at {self.url}"
+            "Launching a Gradio server at 0.0.0.0:5151"
         )
 
         sample_input = (
