@@ -12,7 +12,7 @@ from lightning.storage.path import (
     Path,
     PathGetRequest,
     filesystem,
-    path_to_artifacts_path_work_name,
+    path_to_work_artifact,
 )
 
 from flashy.components import tasks
@@ -86,10 +86,10 @@ class FlashTrainer(TracerPythonScript):
         )
         path._request_queue.put(request)
 
-        response = path._response_queue.get()  # blocking
+        # response = path._response_queue.get()  # blocking
 
         fs = filesystem()
-        source_path = path_to_artifacts_path_work_name(path, response.source)
+        source_path = path_to_work_artifact(path, self)
 
         while not fs.exists(source_path):
             # TODO: Existence check on folder is not enough, files may not be completely transferred yet
