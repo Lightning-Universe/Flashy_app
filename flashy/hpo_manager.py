@@ -70,14 +70,14 @@ class HPOManager(LightningFlow):
 
         self.env = None
 
-    def run(self, selected_task: str, data_config):
+    def run(self, selected_task: str, data_config, url: str):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
         if self.generated_runs is not None:
             self.has_run = True
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
-                run["url"] = data_config.pop("url")
+                run["url"] = url
 
                 run["data_config"] = data_config
 
@@ -85,23 +85,24 @@ class HPOManager(LightningFlow):
                 logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
-            self.runs.run(self.running_runs)
             self.generated_runs = None
+            self.runs.run(self.running_runs)
 
         for run in self.running_runs:
-            run_work = getattr(self.runs, f"work_{run['id']}")
-            if run_work.has_succeeded:
-                # HACK!!!
-                self.env = run_work.env
-                self.results[run["id"]] = (
-                    run,
-                    run_work.monitor,
-                    run_work.last_model_path_source,
-                )
-            elif run_work.has_failed:
-                self.results[run["id"]] = (run, "Failed", None)
-            elif run_work.has_started:
-                self.results[run["id"]] = (run, "started", None)
+            run_work = getattr(self.runs, f"work_{run['id']}", None)
+            if run_work is not None:
+                if run_work.has_succeeded:
+                    # HACK!!!
+                    self.env = run_work.env
+                    self.results[run["id"]] = (
+                        run,
+                        run_work.monitor,
+                        run_work.last_model_path_source,
+                    )
+                elif run_work.has_failed:
+                    self.results[run["id"]] = (run, "Failed", None)
+                elif run_work.has_started:
+                    self.results[run["id"]] = (run, "started", None)
 
         if self.explore_id is not None:
             result = self.results[self.explore_id]
@@ -112,9 +113,6 @@ class HPOManager(LightningFlow):
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
-
-    def exposed_url(self) -> str:
-        return self.fo.work.url
 
 
 @add_flashy_styles
@@ -204,7 +202,7 @@ def render_fn(state: AppState) -> None:
                 if result[1] == "Failed":
                     st.write("Failed")
                 elif result[1] in ["launching", "started"]:
-                    st.write("Waiting")
+                    st.write("Waiting...")
                 else:
                     fiftyone_buttons.append(
                         (
@@ -222,17 +220,8 @@ def render_fn(state: AppState) -> None:
                     state.explore_id = result[0]["id"]
 
                 if (
-                    state.explore_id == result[0]["id"]
-                    and state.fo.ready
-                    and state.fo.run_id == result[0]["id"]
-                ):
-                    st.write(
-                        """
-                        <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                    """,
-                        unsafe_allow_html=True,
-                    )
-                elif state.explore_id == result[0]["id"] or button:
+                    not state.fo.ready and state.explore_id == result[0]["id"]
+                ) or button:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()
                     spinners.append(spinner_context)

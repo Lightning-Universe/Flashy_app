@@ -27,13 +27,15 @@ class DataManager(LightningFlowDynamic):
         super().__init__()
 
         self.config: Optional[Dict[str, Any]] = {}
+        self.url: str = ""
         self.selected_task: Optional[str] = None
         self.defaults: Optional[Dict] = None
 
     def run(self, selected_task: str, defaults: Optional[Dict]):
         self.selected_task = selected_task.lower().replace(" ", "_")
         self.defaults = defaults
-        self.config = defaults or {}
+        self.config = {**(defaults or {})}
+        self.url = self.config.pop("url", "")
 
     def configure_layout(self):
         if self.selected_task is not None:
@@ -58,6 +60,5 @@ def render_fn(state: AppState) -> None:
 
     url = st.text_input("Data URL", (state.defaults or {}).get("url", ""))
 
-    # TODO: Figure out why dict in state can't be mutated
     if url:
-        state.config = {"url": url, **state.config}
+        state.url = url

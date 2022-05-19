@@ -2,9 +2,10 @@ import logging
 import os.path
 import shutil
 import tempfile
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from flash.core.integrations.fiftyone import visualize
+from lightning import BuildConfig
 from lightning.components.python import TracerPythonScript
 from lightning.storage.path import Path
 
@@ -13,9 +14,25 @@ from flashy.components.tasks import TaskMeta
 from flashy.components.utilities import generate_script
 
 
+class FiftyOneBuildConfig(BuildConfig):
+    def build_commands(self) -> List[str]:
+        return [
+            "pip install fiftyone",
+            "pip uninstall -y opencv-python",
+            "pip uninstall -y opencv-python-headless",
+            "pip install opencv-python-headless==4.5.5.64",
+        ]
+
+
 class FlashFiftyOne(TracerPythonScript):
     def __init__(self):
-        super().__init__(__file__, blocking=True, run_once=False, port=5151)
+        super().__init__(
+            __file__,
+            run_once=False,
+            parallel=True,
+            port=5151,
+            cloud_build_config=FiftyOneBuildConfig(),
+        )
 
         self.script_dir = tempfile.mkdtemp()
         self.script_path = os.path.join(self.script_dir, "flash_fiftyone.py")

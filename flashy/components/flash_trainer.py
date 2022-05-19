@@ -4,16 +4,11 @@ import os.path
 import shutil
 import sys
 import tempfile
-import time
+from time import sleep
 from typing import Dict, Optional
 
 from lightning.components.python import TracerPythonScript
-from lightning.storage.path import (
-    Path,
-    PathGetRequest,
-    filesystem,
-    path_to_work_artifact,
-)
+from lightning.storage.path import Path, PathGetRequest, filesystem
 
 from flashy.components import tasks
 from flashy.components.tasks import TaskMeta
@@ -22,7 +17,7 @@ from flashy.components.utilities import generate_script
 
 class FlashTrainer(TracerPythonScript):
     def __init__(self, **kwargs):
-        super().__init__(__file__, blocking=False, raise_exception=True, **kwargs)
+        super().__init__(__file__, raise_exception=True, parallel=True, **kwargs)
 
         self.script_dir = tempfile.mkdtemp()
         self.last_model_path: Optional[Path] = None
@@ -86,16 +81,16 @@ class FlashTrainer(TracerPythonScript):
         )
         path._request_queue.put(request)
 
-        # response = path._response_queue.get()  # blocking
+        response = path._response_queue.get()  # blocking
 
         fs = filesystem()
-        source_path = path_to_work_artifact(path, self)
 
-        while not fs.exists(source_path):
+        # 3. Wait until the file appears in shared storage
+        while not fs.exists(response.path):
             # TODO: Existence check on folder is not enough, files may not be completely transferred yet
-            time.sleep(0.5)
+            sleep(0.5)
 
-        self.last_model_path_source = str(source_path)
+        self.last_model_path_source = str(response.path)
 
         self.env = {
             "LIGHTNING_BUCKET_ENDPOINT_URL": os.getenv(
