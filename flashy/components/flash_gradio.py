@@ -2,7 +2,6 @@ import os
 from typing import Dict, Any, Optional
 import tempfile
 import logging
-import re
 
 import gradio as gr
 
@@ -70,16 +69,12 @@ class FlashGradio(TracerPythonScript):
         # bad workaround?
         self.launched = True
 
-        p = '(?:http.*://)?(?P<host>[^:/ ]+).?(?P<port>[0-9]*).*'
-        match = re.search(p, self.url)
-        server = match.group('host')
-        port = match.group('port')
         logging.info(
-            f"Launched gradio server at {server}:{port}"
+            f"Launched gradio server at {self.host}:{self.port}"
         )
         demo.launch(
-            server_name=server,
-            server_port=int(port),
+            server_name=self.host,
+            server_port=self.port,
         )
 
     def _apply(self, text):
