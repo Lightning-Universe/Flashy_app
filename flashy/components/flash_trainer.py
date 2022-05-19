@@ -45,6 +45,9 @@ class FlashTrainer(TracerPythonScript):
 
         self._task_meta = getattr(tasks, task)
 
+        logging.info("Data config: {data_config}")
+        logging.info("Task config: {task_config}")
+
         generate_script(
             self.script_path,
             "flash_training.jinja",
