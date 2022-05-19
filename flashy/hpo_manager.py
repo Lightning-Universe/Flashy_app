@@ -96,7 +96,6 @@ class HPOManager(LightningFlow):
                 self.results[run["id"]] = (
                     run,
                     run_work.monitor,
-                    # run_work.last_model_path_source,
                 )
             elif run_work.has_failed:
                 self.results[run["id"]] = (run, "Failed", None)
@@ -236,33 +235,6 @@ def render_fn(state: AppState) -> None:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
-
-        # with columns[-1]:
-        #     st.write("### Checkpoint")
-        #
-        #     fs = None
-        #     if state.env is not None:
-        #         for key, value in state.env.items():
-        #             if value:
-        #                 os.environ[key] = value
-        #         fs = filesystem()
-        #
-        #     for result in results.values():
-        #         if result[1] == "Failed":
-        #             st.write("Failed")
-        #         elif result[1] in ["launching", "started"]:
-        #             st.write("Waiting...")
-        #         else:
-        #             if fs is not None:
-        #                 with fs.open(result[2], "rb") as ckpt_file:
-        #                     st.download_button(
-        #                         data=ckpt_file.read(),
-        #                         file_name="checkpoint_"
-        #                         + str(result[0]["id"])
-        #                         + ".ckpt",
-        #                         label="Download",
-        #                         key=str(result[0]["id"]),
-        #                     )
 
         if spinners:
             time.sleep(0.5)
