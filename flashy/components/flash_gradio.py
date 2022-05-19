@@ -55,46 +55,64 @@ class FlashGradio(TracerPythonScript):
             "Launching a Gradio server at 0.0.0.0:5151"
         )
 
-        sample_input = (
-            "Lightning rocks!"
-        )
-        demo = gr.Interface(
-            fn=self._apply,
-            inputs=[
-                gr.inputs.Textbox(default=sample_input),
-            ],
-            outputs="text",
-        )
+        # Get random paths for prediction
+        # Have a template which only takes checkpoint as an arg
+        # Create the interface in the template itself
 
-        # bad workaround?
-        self.launched = True
-        demo.launch(
-            server_name="0.0.0.0",
-            server_port=5151,
-        )
-        logging.info(
-            "Launched gradio server at 0.0.0.0:5151"
-        )
-
-    def _apply(self, text):
+        # Default gradio template for each task (later)
+        # Usptream to flash
+        # demo = gr.Interface(
+        #     fn=self._apply,
+        #     inputs=gr.inputs.Image(type="pil"),
+        #     outputs=[
+        #         gr.outputs.Label(num_top_classes=2),
+        #     ],
+        #     examples=paths,
+        # )
+        #
+        # # bad workaround?
+        # self.launched = True
+        # demo.launch(
+        #     server_name="0.0.0.0",
+        #     server_port=5151,
+        # )
+        # logging.info(
+        #     "Launched gradio server at 0.0.0.0:5151"
+        # )
         generate_script(
             self.script_path,
-            "flash_gradio.jinja",
+            "image_classification_gradio.jinja",
             task=self.script_options["task"],
             data_module_import_path=self._task_meta.data_module_import_path,
             data_module_class=self._task_meta.data_module_class,
             task_import_path=self._task_meta.task_import_path,
             task_class=self._task_meta.task_class,
-            url=self.url,
+            url=self.script_options["url"],
             data_config=self.script_options["data_config"],
             checkpoint=str(self._checkpoint),
-            input_text=str(text),
         )
         self.on_before_run()
         env_copy = os.environ.copy()
         if self.env:
             os.environ.update(self.env)
         res = self._run_tracer()
-        os.environ = env_copy
-        res = self._run_tracer()
-        return res["predictions"]
+
+        # The template only creates the interface, launch happens in on_after_run method
+        interface = res["interface"]
+
+        self.launched = True
+        interface.launch(
+            server_name="0.0.0.0",
+            server_port=5151,
+        )
+    #
+    # def _apply(self, img):
+    #     logging.info(f"****************Found this item: {type(img)}**********************")
+    #     self.on_before_run()
+    #     env_copy = os.environ.copy()
+    #     if self.env:
+    #         os.environ.update(self.env)
+    #     res = self._run_tracer()
+    #     os.environ = env_copy
+    #     res = self._run_tracer()
+    #     return res["predictions"]

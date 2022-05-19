@@ -1,0 +1,68 @@
+import os
+
+import torch
+import numpy as np
+import gradio as gr
+
+import flash
+from flash.core.data.utils import download_data
+from flash.image import ImageClassificationData, ImageClassifier
+
+from torchvision import transforms
+
+os.chdir("{{ root }}")
+
+download_data("{{ url }}", ".")
+
+"""
+datamodule = ImageClassificationData.from_folders(
+  {% for key, value in data_config.items() if key != "target" %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %}
+  batch_size=4,
+  transform_kwargs={"image_size": (196, 196), "mean": (0.485, 0.456, 0.406), "std": (0.229, 0.224, 0.225)},
+)
+val_dataloader = datamodule.val_dataloader()
+
+predict_tensors = []
+for batch in val_dataloader:
+  predict_tensors.append(batch['input'])
+  if len(predict_tensors) > 4:
+    break
+
+inp = transforms.ToTensor()({{ input_img }}).unsqueeze(0)
+
+datamodule = ImageClassificationData.from_tensors(
+  predict_data=[inp],
+  batch_size=1,
+)
+
+# val_dataloader = datamodule.val_dataloader()
+trainer = flash.Trainer()
+model = ImageClassifier.load_from_checkpoint("{{ checkpoint }}")
+predictions = trainer.predict(model, datamodule=datamodule, output="labels")
+"""
+
+def apply(input_img):
+  inp = transforms.ToTensor()(input_img).unsqueeze(0)
+
+  datamodule = ImageClassificationData.from_tensors(
+    predict_data=inp,
+    batch_size=1,
+  )
+
+  trainer = flash.Trainer()
+
+  model = ImageClassifier.load_from_checkpoint("{{ checkpoint }}")
+  predictions = trainer.predict(model, datamodule=datamodule, output="labels")
+  return predictions[0][0]
+
+paths = ["hymenoptera_data/val/ants/Ant-1818.jpg", "hymenoptera_data/val/bees/abeja.jpg"]
+
+# Now create the Gradio Interface
+interface = gr.Interface(
+  fn=apply,
+  inputs=gr.inputs.Image(type="pil"),
+  outputs=[
+    gr.outputs.Label(num_top_classes=2),
+  ],
+  examples=paths,
+)

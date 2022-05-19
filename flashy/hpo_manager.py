@@ -81,16 +81,13 @@ class HPOManager(LightningFlow):
 
         self.fo = FiftyOneScheduler()
         self.gr = GradioScheduler()
-        # self.task_scheduler = None
 
         self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
 
     def run(self, selected_task: str, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
-        if "text" in self.selected_task:
-            current = self.gr
-        else:
-            current = self.fo
+        current = self.gr
+
 
         if self.generated_runs is not None:
             self.has_run = True
@@ -141,6 +138,7 @@ def render_fn(state: AppState) -> None:
         current = state.fo
 
     st.title("Build your model!")
+    current = state.gr
 
     quality = st.select_slider(
         "Model type",
