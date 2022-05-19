@@ -14,6 +14,7 @@ from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
 
 from flashy.fiftyone_scheduler import FiftyOneScheduler
+from flashy.gradio_scheduler import GradioScheduler
 from flashy.run_scheduler import RunScheduler
 from flashy.utilities import add_flashy_styles
 
@@ -65,6 +66,7 @@ class HPOManager(LightningFlow):
         self.runs: LightningFlow = RunScheduler()
 
         self.fo = FiftyOneScheduler()
+        self.gr = GradioScheduler()
 
         self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
 
@@ -72,6 +74,7 @@ class HPOManager(LightningFlow):
 
     def run(self, selected_task: str, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
+        current = self.gr
 
         if self.generated_runs is not None:
             self.has_run = True
@@ -96,7 +99,6 @@ class HPOManager(LightningFlow):
                 self.results[run["id"]] = (
                     run,
                     run_work.monitor,
-                    run_work.last_model_path_source,
                 )
             elif run_work.has_failed:
                 self.results[run["id"]] = (run, "Failed", None)
@@ -108,7 +110,7 @@ class HPOManager(LightningFlow):
             run_work = getattr(self.runs, f"work_{result[0]['id']}")
             path = Path(run_work.last_model_path)
             path._attach_work(run_work)
-            self.fo.run(result[0], path)
+            current.run(result[0], path)
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
@@ -120,6 +122,7 @@ class HPOManager(LightningFlow):
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
     st.title("Build your model!")
+    current = state.gr
 
     quality = st.select_slider(
         "Model type",
@@ -176,7 +179,7 @@ def render_fn(state: AppState) -> None:
                 for result in results.values():
                     st.write(result[0]["model_config"][key])
 
-        with columns[-3]:
+        with columns[-2]:
             st.write("### Performance")
 
             for result in results.values():
@@ -195,7 +198,7 @@ def render_fn(state: AppState) -> None:
                 else:
                     st.write(result[1])
 
-        with columns[-2]:
+        with columns[-1]:
             st.write("### FiftyOne")
 
             fiftyone_buttons = []
@@ -223,8 +226,8 @@ def render_fn(state: AppState) -> None:
 
                 if (
                     state.explore_id == result[0]["id"]
-                    and state.fo.ready
-                    and state.fo.run_id == result[0]["id"]
+                    and current.ready
+                    and current.run_id == result[0]["id"]
                 ):
                     st.write(
                         """
@@ -236,33 +239,6 @@ def render_fn(state: AppState) -> None:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
-
-        with columns[-1]:
-            st.write("### Checkpoint")
-
-            fs = None
-            if state.env is not None:
-                for key, value in state.env.items():
-                    if value:
-                        os.environ[key] = value
-                fs = filesystem()
-
-            for result in results.values():
-                if result[1] == "Failed":
-                    st.write("Failed")
-                elif result[1] in ["launching", "started"]:
-                    st.write("Waiting...")
-                else:
-                    if fs is not None:
-                        with fs.open(result[2], "rb") as ckpt_file:
-                            st.download_button(
-                                data=ckpt_file.read(),
-                                file_name="checkpoint_"
-                                + str(result[0]["id"])
-                                + ".ckpt",
-                                label="Download",
-                                key=str(result[0]["id"]),
-                            )
 
         if spinners:
             time.sleep(0.5)

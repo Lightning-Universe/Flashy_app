@@ -12,7 +12,6 @@ from lightning.storage.path import (
     Path,
     PathGetRequest,
     filesystem,
-    path_to_artifacts_path_work_name,
 )
 
 from flashy.components import tasks
@@ -26,7 +25,6 @@ class FlashTrainer(TracerPythonScript):
 
         self.script_dir = tempfile.mkdtemp()
         self.last_model_path: Optional[Path] = None
-        self.last_model_path_source = None
         self.env = None
         self.monitor = None
         self.progress = None
@@ -75,28 +73,6 @@ class FlashTrainer(TracerPythonScript):
         )
         self.last_model_path = Path(checkpoint_path)
         logging.info(f"Stored last model path: {self.last_model_path}")
-
-        # Transfer Path to Storage
-        path = Path(self.last_model_path)
-        path._attach_work(self)
-        path._attach_queues(self._request_queue, self._response_queue)
-
-        request = PathGetRequest(
-            source=path.origin_name, path=str(path), hash=path.hash
-        )
-        path._request_queue.put(request)
-
-        response = path._response_queue.get()  # blocking
-
-        fs = filesystem()
-        source_path = path_to_artifacts_path_work_name(path, response.source)
-
-        while not fs.exists(source_path):
-            # TODO: Existence check on folder is not enough, files may not be completely transferred yet
-            time.sleep(0.5)
-
-        self.last_model_path_source = str(source_path)
-
         self.env = {
             "LIGHTNING_BUCKET_ENDPOINT_URL": os.getenv(
                 "LIGHTNING_BUCKET_ENDPOINT_URL", ""
