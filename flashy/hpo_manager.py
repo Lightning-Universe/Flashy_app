@@ -32,7 +32,21 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
             "backbone": tune.choice(["resnet101", "efficientnet_b4"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
         },
-    }
+    },
+    "text_classification": {
+        "demo": {
+            "backbone": tune.choice(["prajjwal1/bert-tiny"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+        "regular": {
+            "backbone": tune.choice(["prajjwal1/bert-small"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+        "state-of-the-art!": {
+            "backbone": tune.choice(["prajjwal1/bert-medium"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+    },
 }
 
 
@@ -70,11 +84,10 @@ class HPOManager(LightningFlow):
 
         self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
 
-        self.env = None
-
     def run(self, selected_task: str, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
         current = self.gr
+
 
         if self.generated_runs is not None:
             self.has_run = True
@@ -84,7 +97,7 @@ class HPOManager(LightningFlow):
 
                 run["data_config"] = data_config
 
-                self.results[run["id"]] = (run, "launching", None)
+                self.results[run["id"]] = (run, "launching")
                 logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
@@ -94,16 +107,14 @@ class HPOManager(LightningFlow):
         for run in self.running_runs:
             run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
-                # HACK!!!
-                self.env = run_work.env
                 self.results[run["id"]] = (
                     run,
                     run_work.monitor,
                 )
             elif run_work.has_failed:
-                self.results[run["id"]] = (run, "Failed", None)
+                self.results[run["id"]] = (run, "Failed")
             elif run_work.has_started:
-                self.results[run["id"]] = (run, "started", None)
+                self.results[run["id"]] = (run, "started")
 
         if self.explore_id is not None:
             result = self.results[self.explore_id]
@@ -121,6 +132,11 @@ class HPOManager(LightningFlow):
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
+    if "text" in state.selected_task:
+        current = state.gr
+    else:
+        current = state.fo
+
     st.title("Build your model!")
     current = state.gr
 
@@ -199,7 +215,7 @@ def render_fn(state: AppState) -> None:
                     st.write(result[1])
 
         with columns[-1]:
-            st.write("### FiftyOne")
+            st.write("### Explore")
 
             fiftyone_buttons = []
 

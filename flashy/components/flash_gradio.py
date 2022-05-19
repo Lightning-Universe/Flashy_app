@@ -44,7 +44,7 @@ class FlashGradio(TracerPythonScript):
         # this part of code will have to be changed. Bad workaround!
 
         # Why can't we run the tracer yet? The script expects a user input, which will
-        # be avilable after the Gradio Interface is launched (`demo.launch`).
+        # be available after the Gradio Interface is launched (`demo.launch`).
         # demo.launch blocks any command after it, and hence super().run() will never be
         # called if we put it here. The tracer should run in the callback function
         # _apply which gets the user input text
@@ -61,7 +61,6 @@ class FlashGradio(TracerPythonScript):
 
         # Default gradio template for each task (later)
         # Usptream to flash
-        paths = ["hymenoptera_data/val/ants/Ant-1818.jpg", "hymenoptera_data/val/bees/abeja.jpg"]
         # demo = gr.Interface(
         #     fn=self._apply,
         #     inputs=gr.inputs.Image(type="pil"),
@@ -91,7 +90,6 @@ class FlashGradio(TracerPythonScript):
             url=self.script_options["url"],
             data_config=self.script_options["data_config"],
             checkpoint=str(self._checkpoint),
-            input_paths=paths,
         )
         self.on_before_run()
         env_copy = os.environ.copy()
