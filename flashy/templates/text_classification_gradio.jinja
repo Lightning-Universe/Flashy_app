@@ -8,8 +8,6 @@ from flash.text import TextClassificationData, TextClassifier
 
 os.chdir("{{ root }}")
 
-download_data("{{ url }}", ".")
-
 datamodule = TextClassificationData.from_lists(
   predict_data=[
     "{{ input_text }}"
