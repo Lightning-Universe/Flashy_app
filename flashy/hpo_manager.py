@@ -22,14 +22,17 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
         "demo": {
             "backbone": tune.choice(["resnet18", "efficientnet_b0"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": False,
         },
         "regular": {
             "backbone": tune.choice(["resnet50", "efficientnet_b2"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": True,
         },
         "state-of-the-art!": {
             "backbone": tune.choice(["resnet101", "efficientnet_b4"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": True,
         },
     }
 }
@@ -40,7 +43,10 @@ def _generate_runs(count: int, task: str, search_space: Dict) -> List[Dict[str, 
     for run_id in range(count):
         model_config = {}
         for key, domain in search_space.items():
-            model_config[key] = domain.sample()
+            if hasattr(domain, "sample"):
+                model_config[key] = domain.sample()
+            else:
+                model_config[key] = domain
         runs.append({"id": run_id, "task": task, "model_config": model_config})
     return runs
 

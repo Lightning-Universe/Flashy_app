@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from lightning import LightningFlow
+from lightning import CloudCompute, LightningFlow
 
 from flashy.components.flash_trainer import FlashTrainer
 
@@ -10,7 +10,11 @@ class RunScheduler(LightningFlow):
     def run(self, queued_runs: Optional[List[Dict[str, Any]]]):
         logging.info(f"Queued runs: {queued_runs}")
         for run in queued_runs:
-            run_work = FlashTrainer()
+            run_work = FlashTrainer(
+                cloud_compute=CloudCompute(
+                    "gpu" if run["model_config"].pop("use_gpu", False) else "cpu", 1
+                ),
+            )
             setattr(self, f"work_{run['id']}", run_work)
             logging.info(
                 f"Launching run: {run['id']}. Run work `run` method: {run_work.run}."

@@ -25,6 +25,8 @@ def generate_script(
         **kwargs,
     )
 
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
     with open(path, "w") as f:
         logging.info(f"Rendering {template_file} with variables: {variables}")
         f.write(template.render(**variables))
