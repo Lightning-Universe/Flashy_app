@@ -68,8 +68,6 @@ class HPOManager(LightningFlow):
 
         self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
 
-        self.env = None
-
     def run(self, selected_task: str, data_config):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
@@ -81,7 +79,7 @@ class HPOManager(LightningFlow):
 
                 run["data_config"] = data_config
 
-                self.results[run["id"]] = (run, "launching", None)
+                self.results[run["id"]] = (run, "launching")
                 logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
@@ -91,16 +89,14 @@ class HPOManager(LightningFlow):
         for run in self.running_runs:
             run_work = getattr(self.runs, f"work_{run['id']}")
             if run_work.has_succeeded:
-                # HACK!!!
-                self.env = run_work.env
                 self.results[run["id"]] = (
                     run,
                     run_work.monitor,
                 )
             elif run_work.has_failed:
-                self.results[run["id"]] = (run, "Failed", None)
+                self.results[run["id"]] = (run, "Failed")
             elif run_work.has_started:
-                self.results[run["id"]] = (run, "started", None)
+                self.results[run["id"]] = (run, "started")
 
         if self.explore_id is not None:
             result = self.results[self.explore_id]
