@@ -25,7 +25,6 @@ class FlashTrainer(TracerPythonScript):
 
         self.script_dir = tempfile.mkdtemp()
         self.last_model_path: Optional[Path] = None
-        self.env = None
         self.monitor = None
         self.progress = None
         self._task_meta: Optional[TaskMeta] = None
@@ -73,15 +72,6 @@ class FlashTrainer(TracerPythonScript):
         )
         self.last_model_path = Path(checkpoint_path)
         logging.info(f"Stored last model path: {self.last_model_path}")
-        self.env = {
-            "LIGHTNING_BUCKET_ENDPOINT_URL": os.getenv(
-                "LIGHTNING_BUCKET_ENDPOINT_URL", ""
-            ),
-            "LIGHTNING_BUCKET_NAME": os.getenv("LIGHTNING_BUCKET_NAME", ""),
-            "AWS_ACCESS_KEY_ID": os.getenv("AWS_ACCESS_KEY_ID", ""),
-            "AWS_SECRET_ACCESS_KEY": os.getenv("AWS_SECRET_ACCESS_KEY", ""),
-            "LIGHTNING_CLOUD_APP_ID": os.getenv("LIGHTNING_CLOUD_APP_ID", ""),
-        }
 
     def on_exit(self):
         shutil.rmtree(self.script_dir)
