@@ -1,11 +1,11 @@
 name: Package
 
 # see: https://help.github.com/en/actions/reference/events-that-trigger-workflows
-on:  # Trigger the workflow on push or pull request, but only for the master branch
+on:  # Trigger the workflow on push or pull request, but only for the main and stable branches
   push:
-    branches: [master, "stable"]
+    branches: [main, stable]
   pull_request:
-    branches: [master, "stable"]
+    branches: [main, stable]
 
 jobs:
 
