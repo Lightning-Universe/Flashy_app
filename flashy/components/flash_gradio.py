@@ -68,12 +68,12 @@ class FlashGradio(TracerPythonScript):
 
         # bad workaround?
         self.launched = True
+        logging.info(
+            f"Launched gradio server at {self.host}:{self.port}"
+        )
         demo.launch(
             server_name=self.host,
             server_port=self.port,
-        )
-        logging.info(
-            f"Launched gradio server at {self.url}"
         )
 
     def _apply(self, text):
