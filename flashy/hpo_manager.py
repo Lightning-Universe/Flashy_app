@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -7,13 +6,13 @@ import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.storage import Path
-from lightning.storage.path import filesystem
 from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
 
 from flashy.fiftyone_scheduler import FiftyOneScheduler
+from flashy.gradio_scheduler import GradioScheduler
 from flashy.run_scheduler import RunScheduler
 from flashy.utilities import add_flashy_styles
 
@@ -34,7 +33,21 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
             "learning_rate": tune.uniform(0.00001, 0.01),
             "use_gpu": True,
         },
-    }
+    },
+    "text_classification": {
+        "demo": {
+            "backbone": tune.choice(["prajjwal1/bert-tiny"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+        "regular": {
+            "backbone": tune.choice(["prajjwal1/bert-small"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+        "state-of-the-art!": {
+            "backbone": tune.choice(["prajjwal1/bert-medium"]),
+            "learning_rate": tune.uniform(0.00001, 0.01),
+        },
+    },
 }
 
 
@@ -71,13 +84,17 @@ class HPOManager(LightningFlow):
         self.runs: LightningFlow = RunScheduler()
 
         self.fo = FiftyOneScheduler()
+        self.gr = GradioScheduler()
+        # self.task_scheduler = None
 
-        self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
-
-        self.env = None
+        self.results: Dict[int, Tuple[Dict[str, Any], float]] = {}
 
     def run(self, selected_task: str, data_config, url: str):
         self.selected_task = selected_task.lower().replace(" ", "_")
+        if "text" in self.selected_task:
+            current = self.gr
+        else:
+            current = self.fo
 
         if self.generated_runs is not None:
             self.has_run = True
@@ -87,7 +104,7 @@ class HPOManager(LightningFlow):
 
                 run["data_config"] = data_config
 
-                self.results[run["id"]] = (run, "launching", None)
+                self.results[run["id"]] = (run, "launching")
                 logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
@@ -98,24 +115,21 @@ class HPOManager(LightningFlow):
             run_work = getattr(self.runs, f"work_{run['id']}", None)
             if run_work is not None:
                 if run_work.has_succeeded:
-                    # HACK!!!
-                    self.env = run_work.env
                     self.results[run["id"]] = (
                         run,
                         run_work.monitor,
-                        run_work.last_model_path_source,
                     )
                 elif run_work.has_failed:
-                    self.results[run["id"]] = (run, "Failed", None)
+                    self.results[run["id"]] = (run, "Failed")
                 elif run_work.has_started:
-                    self.results[run["id"]] = (run, "started", None)
+                    self.results[run["id"]] = (run, "started")
 
         if self.explore_id is not None:
             result = self.results[self.explore_id]
             run_work = getattr(self.runs, f"work_{result[0]['id']}")
             path = Path(run_work.last_model_path)
             path._attach_work(run_work)
-            self.fo.run(result[0], path)
+            current.run(result[0], path)
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
@@ -123,6 +137,11 @@ class HPOManager(LightningFlow):
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
+    if "text" in state.selected_task:
+        current = state.gr
+    else:
+        current = state.fo
+
     st.title("Build your model!")
 
     quality = st.select_slider(
@@ -180,7 +199,7 @@ def render_fn(state: AppState) -> None:
                 for result in results.values():
                     st.write(result[0]["model_config"][key])
 
-        with columns[-3]:
+        with columns[-2]:
             st.write("### Performance")
 
             for result in results.values():
@@ -199,8 +218,8 @@ def render_fn(state: AppState) -> None:
                 else:
                     st.write(result[1])
 
-        with columns[-2]:
-            st.write("### FiftyOne")
+        with columns[-1]:
+            st.write("### Explore")
 
             fiftyone_buttons = []
 
@@ -226,38 +245,11 @@ def render_fn(state: AppState) -> None:
                     state.explore_id = result[0]["id"]
 
                 if (
-                    not state.fo.ready and state.explore_id == result[0]["id"]
+                    not current.ready and state.explore_id == result[0]["id"]
                 ) or button:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
-
-        with columns[-1]:
-            st.write("### Checkpoint")
-
-            fs = None
-            if state.env is not None:
-                for key, value in state.env.items():
-                    if value:
-                        os.environ[key] = value
-                fs = filesystem()
-
-            for result in results.values():
-                if result[1] == "Failed":
-                    st.write("Failed")
-                elif result[1] in ["launching", "started"]:
-                    st.write("Waiting...")
-                else:
-                    if fs is not None:
-                        with fs.open(result[2], "rb") as ckpt_file:
-                            st.download_button(
-                                data=ckpt_file.read(),
-                                file_name="checkpoint_"
-                                + str(result[0]["id"])
-                                + ".ckpt",
-                                label="Download",
-                                key=str(result[0]["id"]),
-                            )
 
         if spinners:
             time.sleep(0.5)
