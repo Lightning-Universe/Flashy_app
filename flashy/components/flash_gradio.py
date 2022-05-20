@@ -1,36 +1,31 @@
-import os
-from typing import Dict, Any, Optional
-import tempfile
 import logging
+import os
+import tempfile
+from typing import Dict, Optional
 
 import gradio as gr
-
-from lightning.storage.path import Path
 from lightning.components.python import TracerPythonScript
+from lightning.storage.path import Path
+
 from flashy.components import tasks
 from flashy.components.tasks import TaskMeta
 from flashy.components.utilities import generate_script
 
+
 class FlashGradio(TracerPythonScript):
     def __init__(self):
-        super().__init__(__file__, blocking=True, run_once=False, port=5151)
+        super().__init__(__file__, parallel=True, run_once=False)
 
         self.script_dir = tempfile.mkdtemp()
         self.script_path = os.path.join(self.script_dir, "flash_gradio.py")
         self.script_options = {"task": None, "data_config": None, "url": None}
         self._task_meta: Optional[TaskMeta] = None
 
-        self.launched = False
+        self.ready = False
 
         self._checkpoint = None
 
-    def run(
-        self,
-        task: str,
-        url: str,
-        data_config: Dict,
-        checkpoint: Path
-    ):
+    def run(self, task: str, url: str, data_config: Dict, checkpoint: Path):
         self._task_meta = getattr(tasks, task)
 
         # This is bad, we should not do this.
@@ -51,13 +46,9 @@ class FlashGradio(TracerPythonScript):
         return self.on_after_run({})
 
     def on_after_run(self, res):
-        logging.info(
-            "Launching a Gradio server at 0.0.0.0:5151"
-        )
+        logging.info("Launching Gradio server")
 
-        sample_input = (
-            "Lightning rocks!"
-        )
+        sample_input = "Lightning rocks!"
         demo = gr.Interface(
             fn=self._apply,
             inputs=[
@@ -67,13 +58,10 @@ class FlashGradio(TracerPythonScript):
         )
 
         # bad workaround?
-        self.launched = True
+        self.ready = True
         demo.launch(
-            server_name="0.0.0.0",
-            server_port=5151,
-        )
-        logging.info(
-            "Launched gradio server at 0.0.0.0:5151"
+            server_name=self.host,
+            server_port=self.port,
         )
 
     def _apply(self, text):

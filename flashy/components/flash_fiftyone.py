@@ -34,6 +34,8 @@ class FlashFiftyOne(TracerPythonScript):
             cloud_build_config=FiftyOneBuildConfig(),
         )
 
+        self.ready = False
+
         self.script_dir = tempfile.mkdtemp()
         self.script_path = os.path.join(self.script_dir, "flash_fiftyone.py")
         self._session = None
@@ -73,6 +75,7 @@ class FlashFiftyOne(TracerPythonScript):
         self._session = visualize(predictions, remote=True, address=self.host)
 
         logging.info(f"Launched at URL: {self._session.url}")
+        self.ready = True
 
     def on_exit(self):
         if self._session is not None:

@@ -10,6 +10,8 @@ class TaskMeta:
     task_class: str
     linked_attributes: List[str]
     monitor: str
+    supports_fiftyone: bool
+    supports_gradio: bool
 
 
 image_classification = TaskMeta(
@@ -19,6 +21,8 @@ image_classification = TaskMeta(
     "ImageClassifier",
     ["num_classes", "labels", "multi_label"],
     "val_accuracy",
+    True,
+    False,
 )
 
 text_classification = TaskMeta(
@@ -28,4 +32,6 @@ text_classification = TaskMeta(
     "TextClassifier",
     ["num_classes", "labels", "multi_label"],
     "val_accuracy",
+    False,
+    True,
 )

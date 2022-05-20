@@ -155,6 +155,7 @@ cython_debug/
 
 data/
 hymenoptera_data*
+imdb*
 lightning_logs
 
 .storage/
