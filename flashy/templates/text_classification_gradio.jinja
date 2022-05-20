@@ -15,7 +15,6 @@ datamodule = TextClassificationData.from_lists(
   batch_size=4
 )
 
-# val_dataloader = datamodule.val_dataloader()
 trainer = flash.Trainer()
 model = TextClassifier.load_from_checkpoint("{{ checkpoint }}")
 predictions = trainer.predict(model, datamodule=datamodule, output="labels")
