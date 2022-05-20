@@ -28,25 +28,24 @@ class Flashy(LightningFlow):
             self.data.run(selected_task, self.task_selector.defaults)
 
             if self.data.config:
-                self.hpo.run(
-                    selected_task,
-                    self.data.config,
-                )
+                self.hpo.run(selected_task, self.data.config, self.data.url)
 
     def configure_layout(self):
-        data_explorer_url = self.hpo.exposed_url()
-        if (not self.hpo.fo.ready) and (not self.hpo.gr.work.launched):
-            data_explorer_url = "https://pl-flash-data.s3.amazonaws.com/assets_lightning/large_spinner.gif"
-
-        return [
+        layout = [
             {"name": "Task", "content": self.task_selector},
             {"name": "Data", "content": self.data},
             {"name": "Model", "content": self.hpo},
-            {
-                "name": "Data Explorer",
-                "content": data_explorer_url,
-            },
         ]
+
+        if self.hpo.fo.ready:
+            layout.append(
+                {
+                    "name": "Data Explorer",
+                    "content": self.hpo.fo.work.url,
+                },
+            )
+
+        return layout
 
 
 app = LightningApp(Flashy(), debug=True)

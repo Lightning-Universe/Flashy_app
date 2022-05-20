@@ -16,7 +16,6 @@ conda activate lightning
 
 git clone https://github.com/PyTorchLightning/lightning
 cd lightning
-git checkout auto_ml_custom_image
 pip install -r requirements.txt
 pip install -e .
 python scripts/download_frontend.py
@@ -25,6 +24,7 @@ cd ../
 git clone https://github.com/PyTorchLightning/lightning-auto-ml
 cd lightning-auto-ml
 pip install -r requirements.txt
+pip install fiftyone
 pip install -e .
 
 lightning run app app.py

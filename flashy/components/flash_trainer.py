@@ -4,15 +4,10 @@ import os.path
 import shutil
 import sys
 import tempfile
-import time
 from typing import Dict, Optional
 
 from lightning.components.python import TracerPythonScript
-from lightning.storage.path import (
-    Path,
-    PathGetRequest,
-    filesystem,
-)
+from lightning.storage.path import Path
 
 from flashy.components import tasks
 from flashy.components.tasks import TaskMeta
@@ -21,7 +16,7 @@ from flashy.components.utilities import generate_script
 
 class FlashTrainer(TracerPythonScript):
     def __init__(self, **kwargs):
-        super().__init__(__file__, blocking=False, raise_exception=True, **kwargs)
+        super().__init__(__file__, raise_exception=False, parallel=True, **kwargs)
 
         self.script_dir = tempfile.mkdtemp()
         self.last_model_path: Optional[Path] = None

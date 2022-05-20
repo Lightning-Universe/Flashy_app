@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -7,7 +6,6 @@ import streamlit as st
 from lightning import LightningFlow
 from lightning.frontend import StreamlitFrontend
 from lightning.storage import Path
-from lightning.storage.path import filesystem
 from lightning.utilities.state import AppState
 from ray import tune
 from streamlit.script_request_queue import RerunData
@@ -23,14 +21,17 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
         "demo": {
             "backbone": tune.choice(["resnet18", "efficientnet_b0"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": False,
         },
         "regular": {
             "backbone": tune.choice(["resnet50", "efficientnet_b2"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": True,
         },
         "state-of-the-art!": {
             "backbone": tune.choice(["resnet101", "efficientnet_b4"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": True,
         },
     },
     "text_classification": {
@@ -55,7 +56,10 @@ def _generate_runs(count: int, task: str, search_space: Dict) -> List[Dict[str, 
     for run_id in range(count):
         model_config = {}
         for key, domain in search_space.items():
-            model_config[key] = domain.sample()
+            if hasattr(domain, "sample"):
+                model_config[key] = domain.sample()
+            else:
+                model_config[key] = domain
         runs.append({"id": run_id, "task": task, "model_config": model_config})
     return runs
 
@@ -83,9 +87,9 @@ class HPOManager(LightningFlow):
         self.gr = GradioScheduler()
         # self.task_scheduler = None
 
-        self.results: Dict[int, Tuple[Dict[str, Any], float, str]] = {}
+        self.results: Dict[int, Tuple[Dict[str, Any], float]] = {}
 
-    def run(self, selected_task: str, data_config):
+    def run(self, selected_task: str, data_config, url: str):
         self.selected_task = selected_task.lower().replace(" ", "_")
         if "text" in self.selected_task:
             current = self.gr
@@ -96,7 +100,7 @@ class HPOManager(LightningFlow):
             self.has_run = True
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
-                run["url"] = data_config.pop("url")
+                run["url"] = url
 
                 run["data_config"] = data_config
 
@@ -104,20 +108,21 @@ class HPOManager(LightningFlow):
                 logging.info(f"Results: {self.results[run['id']]}")
             logging.info(f"Running: {self.running_runs}")
 
-            self.runs.run(self.running_runs)
             self.generated_runs = None
+            self.runs.run(self.running_runs)
 
         for run in self.running_runs:
-            run_work = getattr(self.runs, f"work_{run['id']}")
-            if run_work.has_succeeded:
-                self.results[run["id"]] = (
-                    run,
-                    run_work.monitor,
-                )
-            elif run_work.has_failed:
-                self.results[run["id"]] = (run, "Failed")
-            elif run_work.has_started:
-                self.results[run["id"]] = (run, "started")
+            run_work = getattr(self.runs, f"work_{run['id']}", None)
+            if run_work is not None:
+                if run_work.has_succeeded:
+                    self.results[run["id"]] = (
+                        run,
+                        run_work.monitor,
+                    )
+                elif run_work.has_failed:
+                    self.results[run["id"]] = (run, "Failed")
+                elif run_work.has_started:
+                    self.results[run["id"]] = (run, "started")
 
         if self.explore_id is not None:
             result = self.results[self.explore_id]
@@ -128,9 +133,6 @@ class HPOManager(LightningFlow):
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
-
-    def exposed_url(self) -> str:
-        return self.fo.work.url
 
 
 @add_flashy_styles
@@ -225,7 +227,7 @@ def render_fn(state: AppState) -> None:
                 if result[1] == "Failed":
                     st.write("Failed")
                 elif result[1] in ["launching", "started"]:
-                    st.write("Waiting")
+                    st.write("Waiting...")
                 else:
                     fiftyone_buttons.append(
                         (
@@ -243,17 +245,8 @@ def render_fn(state: AppState) -> None:
                     state.explore_id = result[0]["id"]
 
                 if (
-                    state.explore_id == result[0]["id"]
-                    and current.ready
-                    and current.run_id == result[0]["id"]
-                ):
-                    st.write(
-                        """
-                        <a href="http://127.0.0.1:7501/view/Data%20Explorer" target="_parent">Open</a>
-                    """,
-                        unsafe_allow_html=True,
-                    )
-                elif state.explore_id == result[0]["id"] or button:
+                    not current.ready and state.explore_id == result[0]["id"]
+                ) or button:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()
                     spinners.append(spinner_context)
