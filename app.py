@@ -37,15 +37,7 @@ class Flashy(LightningFlow):
             {"name": "Model", "content": self.hpo},
         ]
 
-        if self.hpo.fo.ready:
-            layout.append(
-                {
-                    "name": "Data Explorer",
-                    "content": self.hpo.fo.work.url,
-                },
-            )
-
-        return layout
+        return layout + self.hpo.dm.layout
 
 
 app = LightningApp(Flashy(), debug=True)

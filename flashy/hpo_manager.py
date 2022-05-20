@@ -11,8 +11,7 @@ from ray import tune
 from streamlit.script_request_queue import RerunData
 from streamlit.script_runner import RerunException
 
-from flashy.fiftyone_scheduler import FiftyOneScheduler
-from flashy.gradio_scheduler import GradioScheduler
+from flashy.dashboard import DashboardManager
 from flashy.run_scheduler import RunScheduler
 from flashy.utilities import add_flashy_styles
 
@@ -79,22 +78,16 @@ class HPOManager(LightningFlow):
 
         self.selected_task: Optional[str] = None
 
-        self.explore_id: Optional[str] = None
-
         self.runs: LightningFlow = RunScheduler()
 
-        self.fo = FiftyOneScheduler()
-        self.gr = GradioScheduler()
-        # self.task_scheduler = None
+        self.dm = DashboardManager()
 
         self.results: Dict[int, Tuple[Dict[str, Any], float]] = {}
 
+        self.dashboards = []
+
     def run(self, selected_task: str, data_config, url: str):
         self.selected_task = selected_task.lower().replace(" ", "_")
-        if "text" in self.selected_task:
-            current = self.gr
-        else:
-            current = self.fo
 
         if self.generated_runs is not None:
             self.has_run = True
@@ -124,12 +117,13 @@ class HPOManager(LightningFlow):
                 elif run_work.has_started:
                     self.results[run["id"]] = (run, "started")
 
-        if self.explore_id is not None:
-            result = self.results[self.explore_id]
-            run_work = getattr(self.runs, f"work_{result[0]['id']}")
+        dashboards = []
+        for run_id in self.dashboards:
+            run_work = getattr(self.runs, f"work_{run_id}")
             path = Path(run_work.last_model_path)
             path._attach_work(run_work)
-            current.run(result[0], path)
+            dashboards.append((self.results[run_id][0], path))
+        self.dm.run(dashboards)
 
     def configure_layout(self):
         return StreamlitFrontend(render_fn=render_fn)
@@ -137,11 +131,6 @@ class HPOManager(LightningFlow):
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
-    if "text" in state.selected_task:
-        current = state.gr
-    else:
-        current = state.fo
-
     st.title("Build your model!")
 
     quality = st.select_slider(
@@ -190,7 +179,7 @@ def render_fn(state: AppState) -> None:
             }
 
         keys = results[next(iter(results.keys()))][0]["model_config"].keys()
-        columns = st.columns(len(keys) + 3)
+        columns = st.columns(len(keys) + 2)
 
         for idx, key in enumerate(keys):
             with columns[idx]:
@@ -219,9 +208,9 @@ def render_fn(state: AppState) -> None:
                     st.write(result[1])
 
         with columns[-1]:
-            st.write("### Explore")
+            st.write("### Open Dashboard")
 
-            fiftyone_buttons = []
+            buttons = []
 
             for result in results.values():
                 if result[1] == "Failed":
@@ -229,23 +218,28 @@ def render_fn(state: AppState) -> None:
                 elif result[1] in ["launching", "started"]:
                     st.write("Waiting...")
                 else:
-                    fiftyone_buttons.append(
+                    buttons.append(
                         (
                             result,
                             st.button(
-                                "Explore!",
+                                "Open!",
                                 key=result[0]["id"],
-                                disabled=state.explore_id == result[0]["id"],
+                                disabled=result[0]["id"] in state.dashboards,
                             ),
                         )
                     )
 
-            for (result, button) in fiftyone_buttons:
-                if button:
-                    state.explore_id = result[0]["id"]
+            for (result, button) in buttons:
+                if button and result[0]["id"] not in state.dashboards:
+                    state.dashboards = state.dashboards + [result[0]["id"]]
 
                 if (
-                    not current.ready and state.explore_id == result[0]["id"]
+                    result[0]["id"] in state.dashboards
+                    and not getattr(
+                        getattr(state.dm, f"dash_{result[0]['id']}", None),
+                        "ready",
+                        False,
+                    )
                 ) or button:
                     spinner_context = st.spinner("Loading...")
                     spinner_context.__enter__()

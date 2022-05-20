@@ -124,12 +124,16 @@ class _MockFlow:
 
 
 def _get_flow():
-    app_state = AppState()
-    flow_state = _app_state_to_flow_scope(
-        app_state, flow=os.environ["LIGHTNING_FLOW_NAME"]
-    )
-    flow = _MockFlow(os.environ["LIGHTNING_FLOW_NAME"], flow_state)
-    return flow
+    try:
+        app_state = AppState()
+        flow_state = _app_state_to_flow_scope(
+            app_state, flow=os.environ["LIGHTNING_FLOW_NAME"]
+        )
+        flow = _MockFlow(os.environ["LIGHTNING_FLOW_NAME"], flow_state)
+        return flow
+    except Exception as e:
+        logging.info(f"Error: {e}. Retrying...")
+        return None
 
 
 if __name__ == "__main__":
