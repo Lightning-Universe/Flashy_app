@@ -184,7 +184,7 @@ def render_fn(state: AppState) -> None:
 
         if not results:
             results = {
-                run["id"]: (run, "launching", "") for run in state.generated_runs
+                run["id"]: (run, "launching") for run in state.generated_runs
             }
 
         keys = results[next(iter(results.keys()))][0]["model_config"].keys()
