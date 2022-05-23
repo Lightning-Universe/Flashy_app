@@ -9,7 +9,7 @@ from lightning import LightningFlow, LightningWork
 from lightning.frontend import streamlit_base
 
 from flashy.components import tasks
-from flashy.components.flash_fiftyone import FlashFiftyOne
+from flash_fiftyone import FlashFiftyOne
 from flashy.components.flash_gradio import FlashGradio
 from flashy.utilities import add_flashy_styles
 
