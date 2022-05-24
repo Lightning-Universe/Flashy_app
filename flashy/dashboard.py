@@ -128,7 +128,7 @@ class DashboardManager(LightningFlow):
             if dashboard.launch_fiftyone:
                 if not hasattr(self, f"fo_{id}"):
                     fo = FlashFiftyOne()
-                    # setattr(self, f"fo_{id}", fo)
+                    setattr(self, f"fo_{id}", fo)
                     fo.run(
                         id,
                         run_config["task"],
@@ -136,8 +136,8 @@ class DashboardManager(LightningFlow):
                         run_config["data_config"],
                         checkpoint,
                     )
-                # else:
-                #     fo = getattr(self, f"fo_{id}")
+                else:
+                    fo = getattr(self, f"fo_{id}")
 
                 if fo.ready:
                     dashboard.fiftyone_ready = True
