@@ -39,5 +39,5 @@ model = {{ task_class }}(
     {% for linked_attribute in linked_attributes %}{{ linked_attribute }}=datamodule.{{ linked_attribute }},{% endfor %}
 )
 
-trainer = flash.Trainer(max_epochs=1, accelerator="auto", callbacks=[AppProgressBar()], default_root_dir="{{ root }}")
+trainer = flash.Trainer(max_epochs=1, limit_train_batches=1, limit_val_batches=1, accelerator="auto", callbacks=[AppProgressBar()], default_root_dir="{{ root }}")
 trainer.finetune(model, datamodule=datamodule, strategy="freeze")
