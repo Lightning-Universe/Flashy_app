@@ -88,7 +88,7 @@ class HPOManager(LightningFlow):
 
     def _preprocess(self, data_config: dict):
         for key, val in data_config.items():
-            if key != "train_folder" and (key.startswith("train_") or key.startswith("val_")):
+            if key.startswith("train_") or key.startswith("val_"):
                 data_config[key] = Path(val)
 
     def run(self, selected_task: str, data_config, url: str):
