@@ -1,6 +1,6 @@
 ray[tune]
 lightning-flash[image, text]
 click==8
-streamlit==1.6.0
+streamlit
 jinja2
 gradio
