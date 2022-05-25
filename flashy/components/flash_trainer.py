@@ -56,10 +56,10 @@ class FlashTrainer(TracerPythonScript):
         logging.info(f"Running script: {self.script_path}")
         super().run()
 
-    def _run_tracer(self):
+    def _run_tracer(self, init_globals):
         sys.argv = [self.script_path]
         tracer = self.configure_tracer()
-        return tracer.trace(self.script_path, self, *self.script_args)
+        return tracer.trace(self.script_path, self, *self.script_args, init_globals=init_globals)
 
     def on_after_run(self, res):
         checkpoint_path = os.path.join(self.script_dir, "last_checkpoint.pt")
