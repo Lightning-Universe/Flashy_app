@@ -69,15 +69,12 @@ class HPOManager(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        self.has_run = False
-
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
-        self.runs_progress = {}
 
         self.selected_task: Optional[str] = None
 
-        self.runs: LightningFlow = RunScheduler()
+        self.runs = RunScheduler()
 
         self.dm = DashboardManager()
 
@@ -89,7 +86,13 @@ class HPOManager(LightningFlow):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
         if self.generated_runs is not None:
-            self.has_run = True
+            # Teardown any existing works / results
+            self.dm.stop()
+            self.runs.stop()
+            self.results = {}
+            self.dashboards = []
+
+            # Launch new runs
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
                 run["url"] = url
@@ -146,9 +149,6 @@ def render_fn(state: AppState) -> None:
 
     start_runs = st.button(
         "Start training!",
-        disabled=state.has_run
-        or state.generated_runs is not None
-        or state.selected_task not in _search_spaces,
     )
 
     if start_runs:
@@ -197,10 +197,9 @@ def render_fn(state: AppState) -> None:
                     progress = getattr(
                         getattr(state.runs, f"work_{result[0]['id']}", None),
                         "progress",
-                        None,
+                        0.0,
                     )
-                    state.runs_progress[result[0]["id"]] = progress or 0.0
-                    st.progress(state.runs_progress[result[0]["id"]])
+                    st.progress(progress)
                 else:
                     st.write(result[1])
 

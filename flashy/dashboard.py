@@ -5,12 +5,13 @@ import subprocess
 import sys
 
 import streamlit as st
-from lightning import LightningFlow, LightningWork
+from lightning import LightningWork
 from lightning.frontend import streamlit_base
 
 from flashy.components import tasks
 from flashy.components.flash_fiftyone import FlashFiftyOne
 from flashy.components.flash_gradio import FlashGradio
+from flashy.components.stoppable_lightning_flow import StoppableLightningFlow
 from flashy.utilities import add_flashy_styles
 
 
@@ -98,11 +99,15 @@ def render_fn(state: Dashboard):
             )
 
 
-class DashboardManager(LightningFlow):
+class DashboardManager(StoppableLightningFlow):
     def __init__(self):
         super().__init__()
 
         self.layout = []
+
+    def stop(self):
+        self.layout = []
+        super().stop()
 
     def run(self, dashboards):
         layout = []

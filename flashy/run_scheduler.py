@@ -1,12 +1,13 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from lightning import CloudCompute, LightningFlow
+from lightning import CloudCompute
 
 from flashy.components.flash_trainer import FlashTrainer
+from flashy.components.stoppable_lightning_flow import StoppableLightningFlow
 
 
-class RunScheduler(LightningFlow):
+class RunScheduler(StoppableLightningFlow):
     def run(self, queued_runs: Optional[List[Dict[str, Any]]]):
         logging.info(f"Queued runs: {queued_runs}")
         for run in queued_runs:
