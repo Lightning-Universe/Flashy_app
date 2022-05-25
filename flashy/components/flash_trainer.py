@@ -24,11 +24,6 @@ class FlashTrainer(TracerPythonScript):
         self.progress = None
         self._task_meta: Optional[TaskMeta] = None
 
-    def convert_path_to_str(self, data_config: dict):
-        for key, val in data_config.items():
-            if isinstance(val, Path):
-                data_config[key] = str(val)
-
     def run(
         self,
         task: str,
@@ -44,8 +39,6 @@ class FlashTrainer(TracerPythonScript):
 
         logging.info("Data config: {data_config}")
         logging.info("Task config: {task_config}")
-
-        self.convert_path_to_str(data_config)
 
         generate_script(
             self.script_path,

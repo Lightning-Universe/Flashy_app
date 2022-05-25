@@ -86,15 +86,8 @@ class HPOManager(LightningFlow):
 
         self.dashboards = []
 
-    def _preprocess(self, data_config: dict):
-        for key, val in data_config.items():
-            if key.startswith("train_") or key.startswith("val_"):
-                data_config[key] = Path(val)
-
     def run(self, selected_task: str, data_config, url: str):
         self.selected_task = selected_task.lower().replace(" ", "_")
-
-        self._preprocess(data_config)
 
         if self.generated_runs is not None:
             self.has_run = True
