@@ -8,8 +8,7 @@ from lightning.frontend import StreamlitFrontend
 from lightning.storage import Path
 from lightning.utilities.state import AppState
 from ray import tune
-from streamlit.script_request_queue import RerunData
-from streamlit.script_runner import RerunException
+from streamlit.scriptrunner import RerunData, RerunException
 
 from flashy.dashboard import DashboardManager
 from flashy.run_scheduler import RunScheduler
@@ -145,8 +144,7 @@ def render_fn(state: AppState) -> None:
         disabled=state.selected_task not in _search_spaces,
     )
 
-    start_training_placeholder = st.empty()
-    start_runs = start_training_placeholder.button(
+    start_runs = st.button(
         "Start training!",
         disabled=state.has_run
         or state.generated_runs is not None
@@ -154,7 +152,6 @@ def render_fn(state: AppState) -> None:
     )
 
     if start_runs:
-        start_training_placeholder.button("Start training!", disabled=True)
         performance_runs = {
             "low": 1,
             "medium": 5,
