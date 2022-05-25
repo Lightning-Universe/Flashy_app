@@ -24,6 +24,11 @@ class FlashTrainer(TracerPythonScript):
         self.progress = None
         self._task_meta: Optional[TaskMeta] = None
 
+    def convert_path_to_str(self, data_config: dict):
+        for key, val in data_config.items():
+            if isinstance(val, Path):
+                data_config[key] = str(val)
+
     def run(
         self,
         task: str,
@@ -39,6 +44,8 @@ class FlashTrainer(TracerPythonScript):
 
         logging.info("Data config: {data_config}")
         logging.info("Task config: {task_config}")
+
+        self.convert_path_to_str(data_config)
 
         generate_script(
             self.script_path,
@@ -56,10 +63,10 @@ class FlashTrainer(TracerPythonScript):
         logging.info(f"Running script: {self.script_path}")
         super().run()
 
-    def _run_tracer(self):
+    def _run_tracer(self, init_globals):
         sys.argv = [self.script_path]
         tracer = self.configure_tracer()
-        return tracer.trace(self.script_path, self, *self.script_args)
+        return tracer.trace(self.script_path, self, *self.script_args, init_globals=init_globals)
 
     def on_after_run(self, res):
         checkpoint_path = os.path.join(self.script_dir, "last_checkpoint.pt")
