@@ -87,8 +87,8 @@ class HPOManager(LightningFlow):
 
         if self.generated_runs is not None:
             # Teardown any existing works / results
-            self.dm.stop()
-            self.runs.stop()
+            self.dm.reset()
+            self.runs.reset()
             self.results = {}
             self.dashboards = []
 
@@ -107,7 +107,7 @@ class HPOManager(LightningFlow):
             self.runs.run(self.running_runs)
 
         for run in self.running_runs:
-            run_work = getattr(self.runs, f"work_{run['id']}", None)
+            run_work = self.runs.get_work("runs", str(run["id"]))
             if run_work is not None:
                 if run_work.has_succeeded:
                     self.results[run["id"]] = (
@@ -121,7 +121,7 @@ class HPOManager(LightningFlow):
 
         dashboards = []
         for run_id in self.dashboards:
-            run_work = getattr(self.runs, f"work_{run_id}")
+            run_work = self.runs.get_work("runs", str(run_id))
             path = Path(run_work.last_model_path)
             path._attach_work(run_work)
             dashboards.append((self.results[run_id][0], path))
@@ -148,7 +148,9 @@ def render_fn(state: AppState) -> None:
     )
 
     start_runs = st.button(
-        "Start training!",
+        "Start training (and delete your existing run)!"
+        if state.results
+        else "Start training!",
     )
 
     if start_runs:
@@ -195,11 +197,15 @@ def render_fn(state: AppState) -> None:
                     spinners.append(spinner_context)
                 elif result[1] == "started":
                     progress = getattr(
-                        getattr(state.runs, f"work_{result[0]['id']}", None),
+                        getattr(
+                            state.runs,
+                            state.runs.managed_works["runs"][str(result[0]["id"])],
+                            None,
+                        ),
                         "progress",
-                        0.0,
+                        None,
                     )
-                    st.progress(progress)
+                    st.progress(progress or 0.0)
                 else:
                     st.write(result[1])
 
@@ -232,7 +238,11 @@ def render_fn(state: AppState) -> None:
                 if (
                     result[0]["id"] in state.dashboards
                     and not getattr(
-                        getattr(state.dm, f"dash_{result[0]['id']}", None),
+                        getattr(
+                            state.dm,
+                            state.dm.managed_works["dashboards"][str(result[0]["id"])],
+                            None,
+                        ),
                         "ready",
                         False,
                     )
