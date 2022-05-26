@@ -8,7 +8,7 @@
 
 ## Running the app
 
-To run the app, execute the following commands:
+Let's first start with setting up the environment, and installing the requirements:
 
 ```bash
 conda create --name lightning python=3.8
@@ -24,8 +24,21 @@ cd ../
 git clone https://github.com/PyTorchLightning/lightning-auto-ml
 cd lightning-auto-ml
 pip install -r requirements.txt
+# Because of the conflicts with dependencies and to support the app on cloud
+# currently, it's required that fiftyone is installed manually locally.
+# For cloud, the app will install it for you! :)
 pip install fiftyone
 pip install -e .
+```
 
+In order to run the app now (locally):
+
+```bash
 lightning run app app.py
+```
+
+And to run on the cloud:
+
+```bash
+lightning run app app.py --cloud
 ```
