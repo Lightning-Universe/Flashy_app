@@ -24,8 +24,12 @@ cd ../
 git clone https://github.com/PyTorchLightning/lightning-auto-ml
 cd lightning-auto-ml
 pip install -r requirements.txt
+# Because of conflicts with other dependencies, including fiftyone in the requirements.txt file
+# currently causes failures on the cloud. Please install it manually if the app is running locally.
 pip install fiftyone
 pip install -e .
 
 lightning run app app.py
 ```
+
+In case you receive a `ModuleNotFound` error for `fiftyone`, please consider installing the library manually as shown in the script above.
