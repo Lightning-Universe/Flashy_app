@@ -39,4 +39,5 @@ And to run on the cloud:
 ```bash
 lightning run app app.py --cloud
 ```
+
 In case you receive a `ModuleNotFound` error for `fiftyone`, please consider installing the library manually as shown in the script above, or just use the `requirements-dev.txt` file during installation as shown in the script above.
