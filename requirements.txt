@@ -1,7 +1,7 @@
 ray[tune]
-fiftyone
 lightning-flash[image, text]
 click==8
 streamlit>=1.7.0
 jinja2
 gradio
+protobuf==3.20.1

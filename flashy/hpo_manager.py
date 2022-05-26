@@ -240,7 +240,9 @@ def render_fn(state: AppState) -> None:
                     and not getattr(
                         getattr(
                             state.dm,
-                            state.dm.managed_works["dashboards"][str(result[0]["id"])],
+                            state.dm.managed_works["dashboards"].get(
+                                str(result[0]["id"]), None
+                            ),
                             None,
                         ),
                         "ready",

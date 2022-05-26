@@ -20,8 +20,10 @@ class WorkManager(LightningFlow):
         for work_name, work in self.named_works():
             # TODO: Add a method in the base ``LightningFlow`` to stop **and** remove a work
             work.stop()
-            delattr(self, work_name)
-            self._works.remove(work_name)
+
+            # TODO: Figure out why the work can't be removed this way
+            # delattr(self, work_name)
+            # self._works.remove(work_name)
 
         self.managed_works = {group: {} for group in self.groups}
 
