@@ -5,18 +5,19 @@ import subprocess
 import sys
 
 import streamlit as st
-from lightning import LightningFlow, LightningWork
+from lightning import LightningWork
 from lightning.frontend import streamlit_base
 
 from flashy.components import tasks
 from flashy.components.flash_fiftyone import FlashFiftyOne
 from flashy.components.flash_gradio import FlashGradio
+from flashy.components.work_manager import WorkManager
 from flashy.utilities import add_flashy_styles
 
 
 class Dashboard(LightningWork):
     def __init__(self, run_config):
-        super().__init__(parallel=True, run_once=True)
+        super().__init__(parallel=True, run_once=True, raise_exception=False)
 
         self.run_config = run_config
         self.checkpoint = None
@@ -98,11 +99,15 @@ def render_fn(state: Dashboard):
             )
 
 
-class DashboardManager(LightningFlow):
+class DashboardManager(WorkManager):
     def __init__(self):
-        super().__init__()
+        super().__init__(["dashboards", "fiftyones", "gradios"])
 
         self.layout = []
+
+    def reset(self):
+        self.layout = []
+        super().reset()
 
     def run(self, dashboards):
         layout = []
@@ -110,12 +115,11 @@ class DashboardManager(LightningFlow):
         for run_config, checkpoint in dashboards:
             id = run_config["id"]
 
-            if not hasattr(self, f"dash_{id}"):
+            dashboard = self.get_work("dashboards", id)
+            if dashboard is None:
                 dashboard = Dashboard(run_config)
-                setattr(self, f"dash_{id}", dashboard)
+                self.register_work("dashboards", id, dashboard)
                 dashboard.run(checkpoint)
-            else:
-                dashboard = getattr(self, f"dash_{id}")
 
             if dashboard.ready:
                 layout.append(
@@ -126,17 +130,16 @@ class DashboardManager(LightningFlow):
                 )
 
             if dashboard.launch_fiftyone:
-                if not hasattr(self, f"fo_{id}"):
+                fo = self.get_work("fiftyones", id)
+                if fo is None:
                     fo = FlashFiftyOne()
-                    setattr(self, f"fo_{id}", fo)
+                    self.register_work("fiftyones", id, fo)
                     fo.run(
                         run_config["task"],
                         run_config["url"],
                         run_config["data_config"],
                         checkpoint,
                     )
-                else:
-                    fo = getattr(self, f"fo_{id}")
 
                 if fo.ready:
                     dashboard.fiftyone_ready = True
@@ -149,17 +152,16 @@ class DashboardManager(LightningFlow):
                     )
 
             if dashboard.launch_gradio:
-                if not hasattr(self, f"gradio_{id}"):
+                gradio = self.get_work("gradios", id)
+                if gradio is None:
                     gradio = FlashGradio()
-                    setattr(self, f"gradio_{id}", gradio)
+                    self.register_work("gradios", id, gradio)
                     gradio.run(
                         run_config["task"],
                         run_config["url"],
                         run_config["data_config"],
                         checkpoint,
                     )
-                else:
-                    gradio = getattr(self, f"gradio_{id}")
 
                 if gradio.ready:
                     dashboard.gradio_ready = True

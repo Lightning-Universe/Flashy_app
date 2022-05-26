@@ -16,7 +16,7 @@ from flashy.components.utilities import generate_script
 
 class FlashTrainer(TracerPythonScript):
     def __init__(self, **kwargs):
-        super().__init__(__file__, raise_exception=True, parallel=True, **kwargs)
+        super().__init__(__file__, raise_exception=False, parallel=True, **kwargs)
 
         self.script_dir = tempfile.mkdtemp()
         self.last_model_path: Optional[Path] = None
@@ -59,7 +59,9 @@ class FlashTrainer(TracerPythonScript):
     def _run_tracer(self, init_globals):
         sys.argv = [self.script_path]
         tracer = self.configure_tracer()
-        return tracer.trace(self.script_path, self, *self.script_args, init_globals=init_globals)
+        return tracer.trace(
+            self.script_path, self, *self.script_args, init_globals=init_globals
+        )
 
     def on_after_run(self, res):
         checkpoint_path = os.path.join(self.script_dir, "last_checkpoint.pt")
