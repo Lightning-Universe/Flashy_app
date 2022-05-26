@@ -23,9 +23,10 @@ python scripts/download_frontend.py
 cd ../
 git clone https://github.com/PyTorchLightning/lightning-auto-ml
 cd lightning-auto-ml
-pip install -r requirements.txt
-pip install fiftyone
+pip install -r requirements-dev.txt
 pip install -e .
 
 lightning run app app.py
 ```
+
+In case you receive a `ModuleNotFound` error for `fiftyone`, please consider installing the library manually as shown in the script above, or just use the `requirements-dev.txt` file during installation as shown in the script above.
