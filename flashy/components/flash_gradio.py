@@ -78,11 +78,11 @@ class FlashGradio(TracerPythonScript):
             checkpoint=str(self._checkpoint),
             input_text=str(text),
         )
+        init_globals = globals()
         self.on_before_run()
         env_copy = os.environ.copy()
         if self.env:
             os.environ.update(self.env)
-        res = self._run_tracer()
+        res = self._run_tracer(init_globals=init_globals)
         os.environ = env_copy
-        res = self._run_tracer()
         return res["predictions"]
