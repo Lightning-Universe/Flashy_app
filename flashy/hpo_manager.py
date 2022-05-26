@@ -241,7 +241,8 @@ def render_fn(state: AppState) -> None:
                         getattr(
                             state.dm,
                             state.dm.managed_works["dashboards"].get(
-                                str(result[0]["id"]), None
+                                str(result[0]["id"]),
+                                "this_attribute_does_not_exist"
                             ),
                             None,
                         ),
