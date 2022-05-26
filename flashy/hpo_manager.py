@@ -69,15 +69,12 @@ class HPOManager(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        self.has_run = False
-
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
-        self.runs_progress = {}
 
         self.selected_task: Optional[str] = None
 
-        self.runs: LightningFlow = RunScheduler()
+        self.runs = RunScheduler()
 
         self.dm = DashboardManager()
 
@@ -89,7 +86,13 @@ class HPOManager(LightningFlow):
         self.selected_task = selected_task.lower().replace(" ", "_")
 
         if self.generated_runs is not None:
-            self.has_run = True
+            # Teardown any existing works / results
+            self.dm.reset()
+            self.runs.reset()
+            self.results = {}
+            self.dashboards = []
+
+            # Launch new runs
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
                 run["url"] = url
@@ -104,7 +107,7 @@ class HPOManager(LightningFlow):
             self.runs.run(self.running_runs)
 
         for run in self.running_runs:
-            run_work = getattr(self.runs, f"work_{run['id']}", None)
+            run_work = self.runs.get_work("runs", str(run["id"]))
             if run_work is not None:
                 if run_work.has_succeeded:
                     self.results[run["id"]] = (
@@ -118,7 +121,7 @@ class HPOManager(LightningFlow):
 
         dashboards = []
         for run_id in self.dashboards:
-            run_work = getattr(self.runs, f"work_{run_id}")
+            run_work = self.runs.get_work("runs", str(run_id))
             path = Path(run_work.last_model_path)
             path._attach_work(run_work)
             dashboards.append((self.results[run_id][0], path))
@@ -145,10 +148,9 @@ def render_fn(state: AppState) -> None:
     )
 
     start_runs = st.button(
-        "Start training!",
-        disabled=state.has_run
-        or state.generated_runs is not None
-        or state.selected_task not in _search_spaces,
+        "Start training (and delete your existing run)!"
+        if state.results
+        else "Start training!",
     )
 
     if start_runs:
@@ -195,12 +197,15 @@ def render_fn(state: AppState) -> None:
                     spinners.append(spinner_context)
                 elif result[1] == "started":
                     progress = getattr(
-                        getattr(state.runs, f"work_{result[0]['id']}", None),
+                        getattr(
+                            state.runs,
+                            state.runs.managed_works["runs"][str(result[0]["id"])],
+                            None,
+                        ),
                         "progress",
                         None,
                     )
-                    state.runs_progress[result[0]["id"]] = progress or 0.0
-                    st.progress(state.runs_progress[result[0]["id"]])
+                    st.progress(progress or 0.0)
                 else:
                     st.write(result[1])
 
@@ -233,7 +238,13 @@ def render_fn(state: AppState) -> None:
                 if (
                     result[0]["id"] in state.dashboards
                     and not getattr(
-                        getattr(state.dm, f"dash_{result[0]['id']}", None),
+                        getattr(
+                            state.dm,
+                            state.dm.managed_works["dashboards"].get(
+                                str(result[0]["id"]), None
+                            ),
+                            None,
+                        ),
                         "ready",
                         False,
                     )

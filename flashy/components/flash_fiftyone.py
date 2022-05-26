@@ -38,6 +38,7 @@ class FlashFiftyOne(TracerPythonScript):
             parallel=True,
             port=5151,
             cloud_build_config=FiftyOneBuildConfig(),
+            raise_exception=False,
         )
 
         self.ready = False
