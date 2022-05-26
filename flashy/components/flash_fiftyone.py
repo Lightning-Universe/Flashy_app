@@ -4,12 +4,6 @@ import shutil
 import tempfile
 from typing import Dict, List, Optional
 
-try:
-    import fiftyone
-    _ = fiftyone.__version__
-except ModuleNotFoundError:
-    raise ModuleNotFoundError("Please consider installing fiftyone manually using `pip install fiftyone==0.16.0`")
-
 from flash.core.integrations.fiftyone import visualize
 from lightning import BuildConfig
 from lightning.components.python import TracerPythonScript
@@ -55,6 +49,14 @@ class FlashFiftyOne(TracerPythonScript):
         data_config: Dict,
         checkpoint: Path,
     ):
+        try:
+            import fiftyone
+            _ = fiftyone.__version__
+        except (ModuleNotFoundError, AttributeError):
+            msg = "Please consider installing fiftyone manually using " + \
+                    "`pip install fiftyone==0.16.0`"
+            raise ModuleNotFoundError(msg)
+
         self._task_meta = getattr(tasks, task)
 
         generate_script(
