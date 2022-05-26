@@ -3,7 +3,6 @@ import os
 import tempfile
 from typing import Dict, Optional
 
-import gradio as gr
 from lightning.components.python import TracerPythonScript
 from lightning.storage.path import Path
 
@@ -14,7 +13,12 @@ from flashy.components.utilities import generate_script
 
 class FlashGradio(TracerPythonScript):
     def __init__(self):
-        super().__init__(__file__, parallel=True, run_once=False)
+        super().__init__(
+            __file__,
+            parallel=True,
+            run_once=False,
+            raise_exception=False,
+        )
 
         self.script_dir = tempfile.mkdtemp()
         self.script_path = os.path.join(self.script_dir, "flash_gradio.py")
@@ -46,6 +50,8 @@ class FlashGradio(TracerPythonScript):
         return self.on_after_run({})
 
     def on_after_run(self, res):
+        import gradio as gr
+
         logging.info("Launching Gradio server")
 
         sample_input = "Lightning rocks!"
@@ -78,11 +84,11 @@ class FlashGradio(TracerPythonScript):
             checkpoint=str(self._checkpoint),
             input_text=str(text),
         )
+        init_globals = globals()
         self.on_before_run()
         env_copy = os.environ.copy()
         if self.env:
             os.environ.update(self.env)
-        res = self._run_tracer()
+        res = self._run_tracer(init_globals=init_globals)
         os.environ = env_copy
-        res = self._run_tracer()
         return res["predictions"]

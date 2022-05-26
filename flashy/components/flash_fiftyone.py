@@ -4,6 +4,12 @@ import shutil
 import tempfile
 from typing import Dict, List, Optional
 
+try:
+    import fiftyone
+    _ = fiftyone.__version__
+except ModuleNotFoundError:
+    raise ModuleNotFoundError("Please consider installing fiftyone manually using `pip install fiftyone==0.16.0`")
+
 from flash.core.integrations.fiftyone import visualize
 from lightning import BuildConfig
 from lightning.components.python import TracerPythonScript
@@ -32,6 +38,7 @@ class FlashFiftyOne(TracerPythonScript):
             parallel=True,
             port=5151,
             cloud_build_config=FiftyOneBuildConfig(),
+            raise_exception=False,
         )
 
         self.ready = False

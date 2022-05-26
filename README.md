@@ -23,11 +23,8 @@ python scripts/download_frontend.py
 cd ../
 git clone https://github.com/PyTorchLightning/lightning-auto-ml
 cd lightning-auto-ml
-pip install -r requirements.txt
-# Because of the conflicts with dependencies and to support the app on cloud
-# currently, it's required that fiftyone is installed manually locally.
-# For cloud, the app will install it for you! :)
-pip install fiftyone
+# For local install, we keep a separate requirements file. The cloud app uses requirements.txt file.
+pip install -r requirements-dev.txt
 pip install -e .
 ```
 
@@ -42,3 +39,4 @@ And to run on the cloud:
 ```bash
 lightning run app app.py --cloud
 ```
+In case you receive a `ModuleNotFound` error for `fiftyone`, please consider installing the library manually as shown in the script above, or just use the `requirements-dev.txt` file during installation as shown in the script above.
