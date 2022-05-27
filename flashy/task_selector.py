@@ -60,7 +60,7 @@ class TaskSelector(LightningFlow):
         return StreamlitFrontend(render_fn=render_fn)
 
 
-@functools.lru_cache()
+@st.experimental_memo
 def get_suggested_tasks(question):
     query_datamodule = TextClassificationData.from_lists(
         predict_data=[question],
@@ -94,7 +94,7 @@ def render_fn(state: AppState) -> None:
 
     selected_demo = st.radio("", _DEMOS.keys())
 
-    state.selected_task, state.defaults = _DEMOS[selected_demo]
+    selected_task, defaults = _DEMOS[selected_demo]
 
     st.markdown(
         '<p style="font-family:Courier; font-size: 25px;">or describe what you want to build:</p>',
@@ -107,10 +107,9 @@ def render_fn(state: AppState) -> None:
     )
 
     if question:
-        state.selected_task = None
-        state.defaults = None
-        with st.spinner("Loading..."):
-            suggested_tasks = get_suggested_tasks(question)
+        selected_task = None
+        defaults = None
+        suggested_tasks = get_suggested_tasks(question)
     else:
         suggested_tasks = []
 
@@ -119,4 +118,7 @@ def render_fn(state: AppState) -> None:
             '<p style="font-family:Courier; font-size: 20px;">Suggested tasks</p>',
             unsafe_allow_html=True,
         )
-        state.selected_task = st.radio("", suggested_tasks)
+        selected_task = st.radio("", suggested_tasks)
+
+    state.selected_task = selected_task
+    state.defaults = defaults
