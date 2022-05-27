@@ -17,7 +17,7 @@ from flashy.components.utilities import generate_script
 class FiftyOneBuildConfig(BuildConfig):
     def build_commands(self) -> List[str]:
         return [
-            "pip install fiftyone",
+            "pip install fiftyone==0.15.1",
             "pip uninstall -y opencv-python",
             "pip uninstall -y opencv-python-headless",
             "pip install opencv-python-headless==4.5.5.64",
@@ -51,10 +51,13 @@ class FlashFiftyOne(TracerPythonScript):
     ):
         try:
             import fiftyone
+
             _ = fiftyone.__version__
         except (ModuleNotFoundError, AttributeError):
-            msg = "Please consider installing fiftyone manually using " + \
-                    "`pip install fiftyone==0.16.0`"
+            msg = (
+                "Please consider installing fiftyone manually using "
+                + "`pip install fiftyone==0.16.0`"
+            )
             raise ModuleNotFoundError(msg)
 
         self._task_meta = getattr(tasks, task)
