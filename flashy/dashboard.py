@@ -9,7 +9,7 @@ from lightning import LightningWork
 from lightning.frontend import streamlit_base
 
 from flashy.components import tasks
-from flashy.components.flash_fiftyone import FlashFiftyOne
+from flash_fiftyone import FlashFiftyOne
 from flashy.components.flash_gradio import FlashGradio
 from flashy.components.work_manager import WorkManager
 from flashy.utilities import add_flashy_styles
@@ -135,6 +135,7 @@ class DashboardManager(WorkManager):
                     fo = FlashFiftyOne()
                     self.register_work("fiftyones", id, fo)
                     fo.run(
+                        id,
                         run_config["task"],
                         run_config["url"],
                         run_config["data_config"],
