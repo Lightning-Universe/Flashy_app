@@ -19,6 +19,7 @@ import DataConfig from './data/DataConfig';
 import PillButton from './PillButton';
 import PillTextField from "./PillTextField";
 import PillSelect from "./PillSelect";
+import useSelectedTabState from "../hooks/useSelectedTabState";
 
 
 
@@ -96,10 +97,10 @@ const Demos: Demo[]  = [
 ]
 
 
-export default function Configurator(props: any) {
-    const { lightningState, updateLightningState } = useLightningState();
+export default function Configurator(props: {lightningState: any, updateLightningState: (newState: any) => void}) {
+    const { setSelectedTab } = useSelectedTabState();
 
-    const ready = lightningState?.flows.hpo.vars.ready;
+    const ready = props.lightningState?.flows.hpo.vars.ready;
 
     const [demo, setDemo] = React.useState('ants_bees');
     const [task, setTask] = React.useState('image_classification');
@@ -112,19 +113,19 @@ export default function Configurator(props: any) {
 
     function startTraining() {
         setShowLaunchingSpinner(true);
-        if (lightningState) {
+        if (props.lightningState) {
             // HACK: Ensures that ready is false
-            lightningState.flows.hpo.vars.ready = false
+            props.lightningState.flows.hpo.vars.ready = false
 
             // Create and send new state
-            const newLightningState = cloneDeep(lightningState);
+            const newLightningState = cloneDeep(props.lightningState);
             newLightningState.flows.hpo.vars.start = true;
             newLightningState.flows.hpo.vars.selected_task = task;
             newLightningState.flows.hpo.vars.data_config = Object.fromEntries(dataConfig);
             newLightningState.flows.hpo.vars.model = modelType;
             newLightningState.flows.hpo.vars.performance = targetPerformance;
 
-            updateLightningState(newLightningState);
+            props.updateLightningState(newLightningState);
         }
     }
 
@@ -142,7 +143,7 @@ export default function Configurator(props: any) {
                     <Grid item xs={12}>
                         <Typography variant="h6">Get started</Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} md={6}>
                         <PillSelect
                             helperText=""
                             label="Choose a pre-configured demo"
@@ -153,7 +154,7 @@ export default function Configurator(props: any) {
                             value={demo}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} md={6}>
                         <PillTextField
                             helperText=""
                             label="Or describe what you want to build"
@@ -171,7 +172,7 @@ export default function Configurator(props: any) {
                     <Grid item xs={12}>
                         <Typography variant="h6">Configure your sweep</Typography>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} md={6}>
                         <PillSelect
                             helperText=""
                             label="Model type"
@@ -195,7 +196,7 @@ export default function Configurator(props: any) {
                             value={modelType}
                         />
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid item xs={12} md={6}>
                         <PillSelect
                             helperText=""
                             label="Target performance"
@@ -222,7 +223,7 @@ export default function Configurator(props: any) {
                     <Grid item xs={12}>
                         <Stack direction="row" spacing={2} alignItems="center">
                             <PillButton text="Start training!" onClick={startTraining}/>
-                            {lightningState?.flows.hpo.vars.has_run? [
+                            {props.lightningState?.flows.hpo.vars.has_run? [
                                 (<Typography variant="subtitle2">
                                     <Stack direction="row" alignItems="center">
                                         <InfoIcon color="primary" fontSize="inherit"/>
@@ -243,7 +244,7 @@ export default function Configurator(props: any) {
                     <Typography variant="h5" mb={1}>{ready? "Ready": "Launching..."}</Typography>
                     <Typography variant="body1" mb={3}>Hang tight!</Typography>
                     <Stack direction="row" spacing={3}>
-                        {!ready? <PillButton text="View results" disabled={!ready}/>: <a href={lightningState?.vars.base_url + "/view/Results"} target="_parent" style={{textDecoration: "none"}}><PillButton text="View results" /></a>}
+                        <PillButton text="View results" disabled={!ready} onClick={() => setSelectedTab(1)}/>
                         <PillButton text="Start over" color="grey" onClick={() => setShowLaunchingSpinner(false)}/>
                     </Stack>
                 </Stack>

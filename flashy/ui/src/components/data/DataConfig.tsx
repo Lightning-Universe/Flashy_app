@@ -34,7 +34,7 @@ const DataConfig = React.forwardRef(
         for (let i = 0; i < format.arguments.length; i++)  {
             let argument = format.arguments[i]
             widgets.push(
-                <Grid item xs={12} sm={6} key={argument.name}>
+                <Grid item xs={12} md={6} key={argument.name}>
                     <Widget
                         argument={argument}
                         value={dataConfig.get(argument.name)}
@@ -46,7 +46,7 @@ const DataConfig = React.forwardRef(
 
         return (
             <>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={6}>
                     <PillSelect
                         helperText=""
                         label="Format"
@@ -59,7 +59,7 @@ const DataConfig = React.forwardRef(
                         value={dataConfig.get("target")}
                     />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} md={6}>
                     <PillTextField
                         helperText=""
                         label="Data URL"

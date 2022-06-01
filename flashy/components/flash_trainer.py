@@ -22,7 +22,7 @@ class FlashTrainer(TracerPythonScript):
         self.ready = False
         self.last_model_path: Optional[Path] = None
         self.monitor = None
-        self.progress = None
+        self.progress = 0.0
         self._task_meta: Optional[TaskMeta] = None
 
     def run(

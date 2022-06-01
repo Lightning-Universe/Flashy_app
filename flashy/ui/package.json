@@ -15,7 +15,7 @@
     "boring-avatars": "^1.6.3",
     "filter-material-ui": "2.7.0",
     "fontfaceobserver": "^2.1.0",
-    "lightning-ui": "git+ssh://git@github.com/gridai/lightning-ui.git#35f4124cc8a16a313174fe63ec82cb74af388c6b",
+    "lightning-ui": "git+ssh://git@github.com/PyTorchLightning/lightning-ui.git",
     "lodash": "^4.17.21",
     "notistack": "^2.0.4",
     "query-string": "^7.1.0",

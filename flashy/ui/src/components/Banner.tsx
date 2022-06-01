@@ -26,7 +26,7 @@ export default function Banner(props: any) {
                             The AutoML App
                         </Typography>
                     </Grid>
-                    <Grid item xs={12}>
+                    <Grid item xs={12} display={{xs: "none", md: "initial"}}>
                         <Typography variant="body1">
                             Flashy is an auto-AI app that selects the best deep learning model for your image or text datasets. This app automatically uses state of the art models from Torchvision, TIMM and Hugging Face. This first version of the app is limited in scope and we encourage the community to help improve it!
                         </Typography>

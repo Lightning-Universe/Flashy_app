@@ -1,67 +1,67 @@
-import { useEffect } from "react";
-
 import { QueryClient, QueryClientProvider } from "react-query";
 import { BrowserRouter } from "react-router-dom";
 
-// import ErrorPanel from "components/ErrorPanel";
-// import HyperparameterSummary from "components/HyperparameterSummary";
-// import Launcher from "components/Launcher";
-// import ProgressBarGroup from "components/ProgressBarGroup";
 import Configurator from "components/Configurator"
 import Banner from "components/Banner"
 import {
-  Breadcrumbs,
-  Card,
-  CardContent,
-  CardHeader,
-  Grid,
   SnackbarProvider,
   Stack,
-  useSnackbar,
 } from "lightning-ui/src/design-system/components";
 import ThemeProvider from "lightning-ui/src/design-system/theme";
-
-// import ExecutionSummary from "./components/ExecutionSummary";
-import { useLightningState } from "./hooks/useLightningState";
+import Tabs, { TabItem } from "components/Tabs";
+import React from "react";
+import useSelectedTabState, { SelectedTabProvider } from "hooks/useSelectedTabState";
+import ResultsTable from "./components/ResultsTable";
+import { useLightningState } from "hooks/useLightningState";
 
 const queryClient = new QueryClient();
 
-function AppContainer() {
-
-  // const { enqueueSnackbar } = useSnackbar();
-  // const exception_message = lightningState?.flows.script_orchestrator.works.script_runner?.vars?.exception_message;
-  // useEffect(() => {
-  //   if (exception_message) {
-  //     enqueueSnackbar({
-  //       title: "The script failed to complete",
-  //       severity: "error",
-  //       children: "See the error message",
-  //     });
-  //   }
-  // }, [exception_message]);
-
+function Run(props: {lightningState: any, updateLightningState: (newState: any) => void}) {
   return (
       <Stack order="column">
         <Banner />
-        <Configurator />
+        <Configurator lightningState={props.lightningState} updateLightningState={props.updateLightningState}/>
       </Stack>
-      // <Stack sx={{ height: "100vh", margin: "auto" }}>
-      // </Stack>
   );
 }
 
+function Results(props: {lightningState: any, updateLightningState: (newState: any) => void}) {
+    return (
+        <Stack order="column">
+            <Banner />
+            <ResultsTable lightningState={props.lightningState} updateLightningState={props.updateLightningState}/>
+        </Stack>
+    );
+}
+
+function AppTabs() {
+    const { lightningState, updateLightningState } = useLightningState();
+    const { selectedTab, setSelectedTab } = useSelectedTabState();
+
+    const tabItems: TabItem[] = [
+        { title: "RUN", content: <Run lightningState={lightningState} updateLightningState={updateLightningState}/> },
+        { title: "RESULTS", content: <Results lightningState={lightningState} updateLightningState={updateLightningState}/> },
+    ];
+
+    return (
+        <Tabs selectedTab={selectedTab} onChange={setSelectedTab} tabItems={tabItems} sxTabs={{width: "100%", backgroundColor: "white", paddingX: 2, top: 0, position: "fixed", zIndex: 1000}} sxContent={{paddingTop: 0, paddingBottom: 6, marginTop: "48px"}}/>
+    )
+}
+
 function App() {
-  return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <SnackbarProvider>
-            <AppContainer />
-          </SnackbarProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </ThemeProvider>
-  );
+    return (
+        <ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+                <BrowserRouter>
+                    <SnackbarProvider>
+                        <SelectedTabProvider>
+                            <AppTabs />
+                        </SelectedTabProvider>
+                    </SnackbarProvider>
+                </BrowserRouter>
+            </QueryClientProvider>
+        </ThemeProvider>
+    );
 }
 
 export default App;

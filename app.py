@@ -4,7 +4,6 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 from lightning import LightningApp, LightningFlow  # noqa: E402
-from lightning.core.constants import APP_SERVER_HOST, APP_SERVER_PORT  # noqa: E402
 from lightning.frontend import StaticWebFrontend  # noqa: E402
 
 from flashy.hpo_manager import HPOManager  # noqa: E402
@@ -26,17 +25,13 @@ class Flashy(LightningFlow):
         self.ui = ReactUI()
         self.hpo = HPOManager()
 
-        self.base_url = getattr(
-            self._backend, "base_url", f"{APP_SERVER_HOST}:{APP_SERVER_PORT}"
-        )
-
     def run(self):
         self.hpo.run()
 
     def configure_layout(self):
         layout = [
-            {"name": "Run", "content": self.ui},
-            {"name": "Results", "content": self.hpo},
+            {"name": "Flashy", "content": self.ui},
+            # {"name": "Results", "content": self.hpo},
         ]
 
         return layout + self.hpo.dm.layout
