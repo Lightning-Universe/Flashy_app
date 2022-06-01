@@ -69,10 +69,17 @@ class HPOManager(LightningFlow):
     def __init__(self):
         super().__init__()
 
+        self.start = False
+        self.selected_task: Optional[str] = None
+        self.data_config = {}
+        self.model = "demo"
+        self.performance = "low"
+
+        self.ready = False
+        self.has_run = False
+
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
-
-        self.selected_task: Optional[str] = None
 
         self.runs = RunScheduler()
 
@@ -82,8 +89,24 @@ class HPOManager(LightningFlow):
 
         self.dashboards = []
 
-    def run(self, selected_task: str, data_config, url: str):
-        self.selected_task = selected_task.lower().replace(" ", "_")
+    def run(self):
+        # self.selected_task = selected_task.lower().replace(" ", "_")
+
+        if self.start:
+            # Generate runs
+            performance_runs = {
+                "low": 1,
+                "medium": 5,
+                "high": 10,
+            }
+            self.generated_runs = _generate_runs(
+                performance_runs[self.performance],
+                self.selected_task,
+                _search_spaces[self.selected_task][self.model],
+            )
+            self.start = False
+            self.ready = False
+            self.has_run = True
 
         if self.generated_runs is not None:
             # Teardown any existing works / results
@@ -95,9 +118,7 @@ class HPOManager(LightningFlow):
             # Launch new runs
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
-                run["url"] = url
-
-                run["data_config"] = data_config
+                run["data_config"] = self.data_config
 
                 self.results[run["id"]] = (run, "launching")
                 logging.info(f"Results: {self.results[run['id']]}")
@@ -116,7 +137,8 @@ class HPOManager(LightningFlow):
                     )
                 elif run_work.has_failed:
                     self.results[run["id"]] = (run, "Failed")
-                elif run_work.has_started:
+                elif run_work.ready:
+                    self.ready = True
                     self.results[run["id"]] = (run, "started")
 
         dashboards = []
@@ -133,37 +155,37 @@ class HPOManager(LightningFlow):
 
 @add_flashy_styles
 def render_fn(state: AppState) -> None:
-    st.title("Build your model!")
+    # st.title("Build your model!")
+    #
+    # quality = st.select_slider(
+    #     "Model type",
+    #     _search_spaces.get(state.selected_task, {}).keys(),
+    #     disabled=state.selected_task not in _search_spaces,
+    # )
 
-    quality = st.select_slider(
-        "Model type",
-        _search_spaces.get(state.selected_task, {}).keys(),
-        disabled=state.selected_task not in _search_spaces,
-    )
+    # performance = st.select_slider(
+    #     "Target performance",
+    #     ("low", "medium", "high"),
+    #     disabled=state.selected_task not in _search_spaces,
+    # )
 
-    performance = st.select_slider(
-        "Target performance",
-        ("low", "medium", "high"),
-        disabled=state.selected_task not in _search_spaces,
-    )
+    # start_runs = st.button(
+    #     "Start training (and delete your existing run)!"
+    #     if state.results
+    #     else "Start training!",
+    # )
 
-    start_runs = st.button(
-        "Start training (and delete your existing run)!"
-        if state.results
-        else "Start training!",
-    )
-
-    if start_runs:
-        performance_runs = {
-            "low": 1,
-            "medium": 5,
-            "high": 10,
-        }
-        state.generated_runs = _generate_runs(
-            performance_runs[performance],
-            state.selected_task,
-            _search_spaces[state.selected_task][quality],
-        )
+    # if start_runs:
+    #     performance_runs = {
+    #         "low": 1,
+    #         "medium": 5,
+    #         "high": 10,
+    #     }
+    #     state.generated_runs = _generate_runs(
+    #         performance_runs[performance],
+    #         state.selected_task,
+    #         _search_spaces[state.selected_task][quality],
+    #     )
 
     st.write("## Results")
 
@@ -241,8 +263,7 @@ def render_fn(state: AppState) -> None:
                         getattr(
                             state.dm,
                             state.dm.managed_works["dashboards"].get(
-                                str(result[0]["id"]),
-                                "this_attribute_does_not_exist"
+                                str(result[0]["id"]), "this_attribute_does_not_exist"
                             ),
                             None,
                         ),

@@ -23,6 +23,4 @@ class RunScheduler(WorkManager):
             logging.info(
                 f"Launching run: {run['id']}. Run work `run` method: {run_work.run}."
             )
-            run_work.run(
-                run["task"], run["url"], run["data_config"], run["model_config"]
-            )
+            run_work.run(run["task"], run["data_config"], run["model_config"])

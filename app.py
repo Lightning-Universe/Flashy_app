@@ -4,10 +4,17 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 from lightning import LightningApp, LightningFlow  # noqa: E402
+from lightning.core.constants import APP_SERVER_HOST, APP_SERVER_PORT  # noqa: E402
+from lightning.frontend import StaticWebFrontend  # noqa: E402
 
-from flashy.data_manager import DataManager  # noqa: E402
 from flashy.hpo_manager import HPOManager  # noqa: E402
-from flashy.task_selector import TaskSelector  # noqa: E402
+
+
+class ReactUI(LightningFlow):
+    def configure_layout(self):
+        return StaticWebFrontend(
+            os.path.join(os.path.dirname(__file__), "flashy", "ui", "build")
+        )
 
 
 class Flashy(LightningFlow):
@@ -16,25 +23,20 @@ class Flashy(LightningFlow):
     def __init__(self):
         super().__init__()
 
-        self.task_selector: LightningFlow = TaskSelector()
-        self.data: LightningFlow = DataManager()
-        self.hpo: LightningFlow = HPOManager()
+        self.ui = ReactUI()
+        self.hpo = HPOManager()
+
+        self.base_url = getattr(
+            self._backend, "base_url", f"{APP_SERVER_HOST}:{APP_SERVER_PORT}"
+        )
 
     def run(self):
-        self.task_selector.run()
-
-        if self.task_selector.selected_task is not None:
-            selected_task = self.task_selector.selected_task
-            self.data.run(selected_task, self.task_selector.defaults)
-
-            if self.data.config:
-                self.hpo.run(selected_task, self.data.config, self.data.url)
+        self.hpo.run()
 
     def configure_layout(self):
         layout = [
-            {"name": "Task", "content": self.task_selector},
-            {"name": "Data", "content": self.data},
-            {"name": "Model", "content": self.hpo},
+            {"name": "Run", "content": self.ui},
+            {"name": "Results", "content": self.hpo},
         ]
 
         return layout + self.hpo.dm.layout
