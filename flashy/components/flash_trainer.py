@@ -16,18 +16,19 @@ from flashy.components.utilities import generate_script
 
 class FlashTrainer(TracerPythonScript):
     def __init__(self, **kwargs):
-        super().__init__(__file__, raise_exception=False, parallel=True, **kwargs)
+        super().__init__(__file__, raise_exception=True, parallel=True, **kwargs)
 
         self.script_dir = tempfile.mkdtemp()
+        self.ready = False
         self.last_model_path: Optional[Path] = None
         self.monitor = None
-        self.progress = None
+        self.progress = 0.0
         self._task_meta: Optional[TaskMeta] = None
 
     def run(
         self,
+        root: Path,
         task: str,
-        url: str,
         data_config: Dict,
         task_config: Dict,
     ):
@@ -49,11 +50,13 @@ class FlashTrainer(TracerPythonScript):
             task_import_path=self._task_meta.task_import_path,
             task_class=self._task_meta.task_class,
             linked_attributes=self._task_meta.linked_attributes,
-            url=url,
             data_config=data_config,
             task_config=task_config,
+            data_root=str(root),
         )
         logging.info(f"Running script: {self.script_path}")
+
+        self.ready = True
         super().run()
 
     def _run_tracer(self, init_globals):

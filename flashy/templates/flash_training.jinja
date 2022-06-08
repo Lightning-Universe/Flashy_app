@@ -1,10 +1,12 @@
+import os
 import sys
 import flash
-from flash.core.data.utils import download_data
 from {{ data_module_import_path }} import {{ data_module_class }}
 from {{ task_import_path }} import {{ task_class }}
 from pytorch_lightning.callbacks.progress.base import ProgressBarBase
 from lightning.utilities.state import AppState
+
+os.chdir("{{ data_root }}")
 
 app_state = sys.argv[1]
 
@@ -26,8 +28,6 @@ class AppProgressBar(ProgressBarBase):
     def on_train_epoch_end(self, trainer, pl_module):
         super().on_train_epoch_end(trainer, pl_module)
         self._total += self.total_train_batches
-
-download_data("{{ url }}", ".")
 
 datamodule = {{ data_module_class }}.{{ data_config["target"] }}(
     {% for key, value in data_config.items() if key != "target" %}{{ key }}={% if value is string %}"{{ value }}"{% else %}{{ value }}{% endif %},{% endfor %}

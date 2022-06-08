@@ -10,7 +10,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -163,3 +162,5 @@ lightning_logs
 .shared/
 
 *.pt
+
+node_modules

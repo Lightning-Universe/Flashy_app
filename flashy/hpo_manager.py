@@ -1,18 +1,12 @@
 import logging
-import time
 from typing import Any, Dict, List, Optional, Tuple
 
-import streamlit as st
 from lightning import LightningFlow
-from lightning.frontend import StreamlitFrontend
 from lightning.storage import Path
-from lightning.utilities.state import AppState
 from ray import tune
-from streamlit.scriptrunner import RerunData, RerunException
 
 from flashy.dashboard import DashboardManager
 from flashy.run_scheduler import RunScheduler
-from flashy.utilities import add_flashy_styles
 
 _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
     "image_classification": {
@@ -69,10 +63,17 @@ class HPOManager(LightningFlow):
     def __init__(self):
         super().__init__()
 
+        self.start = False
+        self.selected_task: Optional[str] = None
+        self.data_config = {}
+        self.model = "demo"
+        self.performance = "low"
+
+        self.ready = False
+        self.has_run = False
+
         self.generated_runs: Optional[List[Dict[str, Any]]] = None
         self.running_runs: Optional[List[Dict[str, Any]]] = []
-
-        self.selected_task: Optional[str] = None
 
         self.runs = RunScheduler()
 
@@ -82,8 +83,22 @@ class HPOManager(LightningFlow):
 
         self.dashboards = []
 
-    def run(self, selected_task: str, data_config, url: str):
-        self.selected_task = selected_task.lower().replace(" ", "_")
+    def run(self, root: Path):
+        if self.start:
+            # Generate runs
+            performance_runs = {
+                "low": 1,
+                "medium": 5,
+                "high": 10,
+            }
+            self.generated_runs = _generate_runs(
+                performance_runs[self.performance],
+                self.selected_task,
+                _search_spaces[self.selected_task][self.model],
+            )
+            self.start = False
+            self.ready = False
+            self.has_run = True
 
         if self.generated_runs is not None:
             # Teardown any existing works / results
@@ -95,169 +110,27 @@ class HPOManager(LightningFlow):
             # Launch new runs
             self.running_runs: List[Dict[str, Any]] = self.generated_runs
             for run in self.running_runs:
-                run["url"] = url
-
-                run["data_config"] = data_config
-
-                self.results[run["id"]] = (run, "launching")
-                logging.info(f"Results: {self.results[run['id']]}")
+                run["data_config"] = self.data_config
             logging.info(f"Running: {self.running_runs}")
 
             self.generated_runs = None
-            self.runs.run(self.running_runs)
+            self.runs.run(root, self.running_runs)
 
         for run in self.running_runs:
             run_work = self.runs.get_work("runs", str(run["id"]))
             if run_work is not None:
                 if run_work.has_succeeded:
-                    self.results[run["id"]] = (
-                        run,
-                        run_work.monitor,
-                    )
+                    self.results[run["id"]] = {
+                        "run": run,
+                        "progress": "completed",
+                        "monitor": run_work.monitor,
+                    }
                 elif run_work.has_failed:
-                    self.results[run["id"]] = (run, "Failed")
-                elif run_work.has_started:
-                    self.results[run["id"]] = (run, "started")
-
-        dashboards = []
-        for run_id in self.dashboards:
-            run_work = self.runs.get_work("runs", str(run_id))
-            path = Path(run_work.last_model_path)
-            path._attach_work(run_work)
-            dashboards.append((self.results[run_id][0], path))
-        self.dm.run(dashboards)
-
-    def configure_layout(self):
-        return StreamlitFrontend(render_fn=render_fn)
-
-
-@add_flashy_styles
-def render_fn(state: AppState) -> None:
-    st.title("Build your model!")
-
-    quality = st.select_slider(
-        "Model type",
-        _search_spaces.get(state.selected_task, {}).keys(),
-        disabled=state.selected_task not in _search_spaces,
-    )
-
-    performance = st.select_slider(
-        "Target performance",
-        ("low", "medium", "high"),
-        disabled=state.selected_task not in _search_spaces,
-    )
-
-    start_runs = st.button(
-        "Start training (and delete your existing run)!"
-        if state.results
-        else "Start training!",
-    )
-
-    if start_runs:
-        performance_runs = {
-            "low": 1,
-            "medium": 5,
-            "high": 10,
-        }
-        state.generated_runs = _generate_runs(
-            performance_runs[performance],
-            state.selected_task,
-            _search_spaces[state.selected_task][quality],
-        )
-
-    st.write("## Results")
-
-    if state.results or state.generated_runs:
-        spinners = []
-
-        results = state.results
-
-        if not results:
-            results = {
-                run["id"]: (run, "launching", "") for run in state.generated_runs
-            }
-
-        keys = results[next(iter(results.keys()))][0]["model_config"].keys()
-        columns = st.columns(len(keys) + 2)
-
-        for idx, key in enumerate(keys):
-            with columns[idx]:
-                st.write(f"### {key}")
-
-                for result in results.values():
-                    st.write(result[0]["model_config"][key])
-
-        with columns[-2]:
-            st.write("### Performance")
-
-            for result in results.values():
-                if result[1] == "launching":
-                    spinner_context = st.spinner("Launching...")
-                    spinner_context.__enter__()
-                    spinners.append(spinner_context)
-                elif result[1] == "started":
-                    progress = getattr(
-                        getattr(
-                            state.runs,
-                            state.runs.managed_works["runs"][str(result[0]["id"])],
-                            None,
-                        ),
-                        "progress",
-                        None,
-                    )
-                    st.progress(progress or 0.0)
-                else:
-                    st.write(result[1])
-
-        with columns[-1]:
-            st.write("### Open Dashboard")
-
-            buttons = []
-
-            for result in results.values():
-                if result[1] == "Failed":
-                    st.write("Failed")
-                elif result[1] in ["launching", "started"]:
-                    st.write("Waiting...")
-                else:
-                    buttons.append(
-                        (
-                            result,
-                            st.button(
-                                "Open!",
-                                key=result[0]["id"],
-                                disabled=result[0]["id"] in state.dashboards,
-                            ),
-                        )
-                    )
-
-            for (result, button) in buttons:
-                if button and result[0]["id"] not in state.dashboards:
-                    state.dashboards = state.dashboards + [result[0]["id"]]
-
-                if (
-                    result[0]["id"] in state.dashboards
-                    and not getattr(
-                        getattr(
-                            state.dm,
-                            state.dm.managed_works["dashboards"].get(
-                                str(result[0]["id"]),
-                                "this_attribute_does_not_exist"
-                            ),
-                            None,
-                        ),
-                        "ready",
-                        False,
-                    )
-                ) or button:
-                    spinner_context = st.spinner("Loading...")
-                    spinner_context.__enter__()
-                    spinners.append(spinner_context)
-
-        if spinners:
-            time.sleep(0.5)
-            _ = [
-                spinner_context.__exit__(None, None, None)
-                for spinner_context in spinners
-            ]
-            raise RerunException(RerunData())
+                    self.ready = True
+                    self.results[run["id"]] = {"run": run, "progress": "failed"}
+                elif run_work.ready:
+                    self.ready = True
+                    self.results[run["id"]] = {
+                        "run": run,
+                        "progress": run_work.progress,
+                    }
