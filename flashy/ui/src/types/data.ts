@@ -1,7 +1,7 @@
 export type Argument = {
     name: string;
     label: string;
-    type: "string";
+    type: "string" | "file" | "folder";
 };
 
 export type Format = {
@@ -17,8 +17,8 @@ export type DataOptions = {
 }
 
 export type Demo = {
-    name: string;
-    label: string;
+    // name: string;
+    // label: string;
     task: string;
     config: Map<string, any>;
 }

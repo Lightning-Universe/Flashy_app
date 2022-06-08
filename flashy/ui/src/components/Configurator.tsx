@@ -9,9 +9,8 @@ import {
     Typography,
     Stack,
     Box,
-    SvgIcon,
+    SvgIcon, RadioGroup, FormControlLabel, Radio, FormControl,
 } from "lightning-ui/src/design-system/components";
-import { useLightningState } from "../hooks/useLightningState";
 
 import CircularProgress  from "@mui/material/CircularProgress";
 import {DataOptions, Demo} from "../types/data";
@@ -32,20 +31,20 @@ const loadingOptions: DataOptions[] = [
                 name: "from_folders",
                 label: "Folders",
                 arguments: [
-                    {name: "train_folder", label: "Train Folder", type: "string"},
-                    {name: "val_folder", label: "Validation Folder", type: "string"},
+                    {name: "train_folder", label: "Train Folder", type: "folder"},
+                    {name: "val_folder", label: "Validation Folder", type: "folder"},
                 ],
             },
             {
                 name: "from_csv",
                 label: "CSV",
                 arguments: [
+                    {name: "train_file", label: "Train CSV File", type: "file"},
+                    {name: "train_images_root", label: "Train Image Folder", type: "folder"},
+                    {name: "val_file", label: "Validation CSV File", type: "file"},
+                    {name: "val_images_root", label: "Validation Image Folder", type: "folder"},
                     {name: "input_field", label: "Input Field", type: "string"},
                     {name: "target_fields", label: "Target Field", type: "string"},
-                    {name: "train_file", label: "Train CSV File", type: "string"},
-                    {name: "train_images_root", label: "Train Image Folder", type: "string"},
-                    {name: "val_file", label: "Validation CSV File", type: "string"},
-                    {name: "val_images_root", label: "Validation Image Folder", type: "string"},
                 ],
             },
         ],
@@ -58,10 +57,10 @@ const loadingOptions: DataOptions[] = [
                 name: "from_csv",
                 label: "CSV",
                 arguments: [
+                    {name: "train_file", label: "Train CSV File", type: "file"},
+                    {name: "val_file", label: "Validation CSV File", type: "file"},
                     {name: "input_field", label: "Input Field", type: "string"},
                     {name: "target_fields", label: "Target Field", type: "string"},
-                    {name: "train_file", label: "Train CSV File", type: "string"},
-                    {name: "val_file", label: "Validation CSV File", type: "string"},
                 ],
             },
         ],
@@ -71,8 +70,8 @@ const loadingOptions: DataOptions[] = [
 
 const Demos: Demo[]  = [
     {
-        name: "ants_bees",
-        label: "ants & bees detector",
+        // name: "ants_bees",
+        // label: "ants & bees detector",
         task: "image_classification",
         config: new Map([
             ["url", "https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip"],
@@ -82,8 +81,8 @@ const Demos: Demo[]  = [
         ])
     },
     {
-        name: "movie_reviews",
-        label: "movie review sentiment analyser",
+        // name: "movie_reviews",
+        // label: "movie review sentiment analyser",
         task: "text_classification",
         config: new Map([
             ["url", "https://pl-flash-data.s3.amazonaws.com/imdb.zip"],
@@ -102,14 +101,13 @@ export default function Configurator(props: {lightningState: any, updateLightnin
 
     const ready = props.lightningState?.flows.hpo.vars.ready;
 
-    const [demo, setDemo] = React.useState('ants_bees');
     const [task, setTask] = React.useState('image_classification');
-    const [taskPrompt, setTaskPrompt] = React.useState('');
     const [modelType, setModelType] = React.useState('demo');
     const [targetPerformance, setTargetPerformance] = React.useState('low');
     const [showLaunchingSpinner, setShowLaunchingSpinner] = React.useState(false);
 
-    const [dataConfig, setDataConfig] = React.useState(Demos[0].config);
+    const [dataConfig, setDataConfig] = React.useState(new Map());
+    const [demoDataConfig, setDemoDataConfig] = React.useState(Demos[0].config);
 
     function startTraining() {
         setShowLaunchingSpinner(true);
@@ -129,46 +127,43 @@ export default function Configurator(props: {lightningState: any, updateLightnin
         }
     }
 
-    function setDemoDataConfig(value: any) {
-        setDemo(value)
-        let demoIndex = Demos.findIndex((demo: Demo) => demo.name == value)
-        setTask(Demos[demoIndex].task)
-        setDataConfig(Demos[demoIndex].config)
-    }
+    const handleTaskChange = (event: any) => {
+        setTask(event.target.value);
+
+        let demoIndex = Demos.findIndex((demo: Demo) => demo.task == event.target.value)
+        setDemoDataConfig(Demos[demoIndex].config)
+    };
 
     return (
         <>
             <Box display={!showLaunchingSpinner? "initial": "none"}>
                 <Grid container spacing={3} px={{xs: 6, sm: 12, md: 18}} py={6}>
                     <Grid item xs={12}>
-                        <Typography variant="h6">Get started</Typography>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <PillSelect
-                            helperText=""
-                            label="Choose a pre-configured demo"
-                            onChange={setDemoDataConfig}
-                            options={Demos.map((demo: Demo) => {return {label: demo.name, value: demo.label}})}
-                            fullWidth
-                            statusText=""
-                            value={demo}
-                        />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                        <PillTextField
-                            helperText=""
-                            label="Or describe what you want to build"
-                            onChange={setTaskPrompt as (value: any) => void}
-                            fullWidth
-                            statusText=""
-                            value={taskPrompt}
-                            disabled={true}
-                        />
+                        <Typography variant="h6">Choose your AI task</Typography>
                     </Grid>
                     <Grid item xs={12}>
-                        <Typography variant="h6">Load your data</Typography>
+                        <FormControl>
+                            <RadioGroup
+                                name="task"
+                                row
+                                value={task}
+                                onChange={handleTaskChange}
+                            >
+                                <FormControlLabel value="image_classification" control={<Radio />} label="Image Classification" />
+                                <FormControlLabel value="text_classification" control={<Radio />} label="Text Classification" />
+                            </RadioGroup>
+                        </FormControl>
                     </Grid>
-                    <DataConfig dataOptions={loadingOptions[loadingOptions.findIndex((dataOptions: DataOptions) => dataOptions.task == task)]} value={dataConfig} onChange={setDataConfig}/>
+                    <Grid item xs={12}>
+                        <Typography variant="h6">Upload your dataset</Typography>
+                    </Grid>
+                    <DataConfig
+                        dataOptions={loadingOptions[loadingOptions.findIndex((dataOptions: DataOptions) => dataOptions.task == task)]}
+                        value={dataConfig}
+                        example={demoDataConfig}
+                        onChange={setDataConfig}
+                        lightningState={props.lightningState}
+                    />
                     <Grid item xs={12}>
                         <Typography variant="h6">Configure your sweep</Typography>
                     </Grid>

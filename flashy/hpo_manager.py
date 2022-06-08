@@ -2,6 +2,7 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from lightning import LightningFlow
+from lightning.storage import Path
 from ray import tune
 
 from flashy.dashboard import DashboardManager
@@ -82,9 +83,8 @@ class HPOManager(LightningFlow):
 
         self.dashboards = []
 
-    def run(self):
+    def run(self, root: Path):
         if self.start:
-            logging.info("REACHED")
             # Generate runs
             performance_runs = {
                 "low": 1,
@@ -114,7 +114,7 @@ class HPOManager(LightningFlow):
             logging.info(f"Running: {self.running_runs}")
 
             self.generated_runs = None
-            self.runs.run(self.running_runs)
+            self.runs.run(root, self.running_runs)
 
         for run in self.running_runs:
             run_work = self.runs.get_work("runs", str(run["id"]))
