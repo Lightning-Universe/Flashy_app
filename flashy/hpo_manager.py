@@ -3,7 +3,7 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from lightning import LightningFlow
-from lightning.storage import Path
+from lightning.storage import Drive
 from ray import tune
 
 from flashy.run_scheduler import RunScheduler
@@ -63,23 +63,24 @@ class HPOManager(LightningFlow):
     """The HPOManager is used to suggest a list of configurations (hyper-parameters) to run with some configuration from
     the user for the given task."""
 
-    def __init__(self):
+    def __init__(self, datasets: Drive):
         super().__init__()
 
+        self.runs = RunScheduler(datasets)
+
         self.start = False
+        self.dataset: Optional[str] = None
         self.selected_task: Optional[str] = None
         self.data_config = {}
         self.model = "demo"
         self.performance = "low"
-
-        self.runs = RunScheduler()
 
         self.running_runs: Dict[int, List[Dict[str, Any]]] = {}
         self.results: Dict[int, Dict[str, Dict[str, Any]]] = {}
 
         self.stopped_run = None
 
-    def run(self, root: Path):
+    def run(self):
         if self.start:
             self.start = False
             # Generate runs
@@ -107,7 +108,7 @@ class HPOManager(LightningFlow):
             )
             self.running_runs[sweep_id] = generated_runs
 
-            self.runs.run(root, generated_runs)
+            self.runs.run(self.dataset, generated_runs)
 
         for sweep_id, runs in self.running_runs.items():
 

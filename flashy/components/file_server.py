@@ -1,11 +1,10 @@
 import os
 import zipfile
 from dataclasses import dataclass
-from typing import Union
 
 import requests
 from lightning import BuildConfig, LightningWork
-from lightning.storage import Path
+from lightning.storage.drive import Drive
 
 
 @dataclass
@@ -15,22 +14,20 @@ class FileServerBuildConfig(BuildConfig):
 
 
 class FileServer(LightningWork):
-    def __init__(self, root: Union[str, Path], **kwargs):
+    def __init__(self, drive: Drive, **kwargs):
         super().__init__(cloud_build_config=FileServerBuildConfig(), **kwargs)
 
-        self.root = root if isinstance(root, Path) else Path(root)
-
-        os.makedirs(str(self.root), exist_ok=True)
+        self.drive = drive
 
     def unzip(self, filename):
         if os.path.exists(filename):  # TODO: Error if not exists
             with zipfile.ZipFile(filename, "r") as zip_ref:
-                zip_ref.extractall(self.root)
+                zip_ref.extractall(".")
         return filename.replace(".zip", "")
 
     async def upload_url(self, url):
         filename = url.split("/")[-1]
-        uploaded_file = os.path.join(self.root, filename)
+        uploaded_file = filename
 
         r = requests.get(url, stream=True, verify=False)
 
@@ -38,12 +35,14 @@ class FileServer(LightningWork):
             for chunk in r.iter_content(chunk_size=1024):
                 out_file.write(chunk)
 
-        return {"path": os.path.basename(self.unzip(uploaded_file))}
+        reference = os.path.basename(self.unzip(uploaded_file))
+        self.drive.put(reference)
+        return {"path": reference}
 
     async def upload_zip(self, file):
         import aiofiles
 
-        uploaded_file = os.path.join(self.root, file.filename)
+        uploaded_file = file.filename
 
         async with aiofiles.open(uploaded_file, "wb") as out_file:
             content = await file.read(1024)
@@ -51,7 +50,9 @@ class FileServer(LightningWork):
                 await out_file.write(content)
                 content = await file.read(1024)
 
-        return {"path": os.path.basename(self.unzip(uploaded_file))}
+        reference = os.path.basename(self.unzip(uploaded_file))
+        self.drive.put(reference)
+        return {"path": reference}
 
     def run(self):
         import uvicorn
@@ -84,26 +85,30 @@ class FileServer(LightningWork):
 
         @app.get("/listdirs/{path}")
         async def get_listdirs(path: str):
-            all_dirs = []
+            if not os.path.exists(path):
+                self.drive.get(path)
 
-            for root, dirs, _ in os.walk(os.path.join(self.root, path)):
-                root = root[len(str(self.root)) + 1 :]  # noqa: E203
+            all_dirs = []
+            for root, dirs, _ in os.walk(path):
                 all_dirs.extend([os.path.join(root, dir) for dir in dirs])
 
             return all_dirs
 
         @app.get("/listfiles/{path}")
         async def get_listfiles(path: str):
-            all_files = []
+            if not os.path.exists(path):
+                self.drive.get(path)
 
-            for root, _, files in os.walk(os.path.join(self.root, path)):
-                root = root[len(str(self.root)) + 1 :]  # noqa: E203
+            all_files = []
+            for root, _, files in os.walk(path):
                 all_files.extend([os.path.join(root, file) for file in files])
 
             return all_files
 
         @app.get("/files/{filename}")
         async def get_file(filename: str):
+            if not os.path.exists(filename):
+                self.drive.get(filename)
             return FileResponse(os.path.join(self.root, filename))
 
         uvicorn.run(app, host=self.host, port=self.port)

@@ -7,6 +7,7 @@ import tempfile
 from typing import Dict, Optional
 
 from lightning.components.python import TracerPythonScript
+from lightning.storage import Drive
 from lightning.storage.path import Path
 
 from flashy.components import tasks
@@ -15,8 +16,10 @@ from flashy.components.utilities import generate_script
 
 
 class FlashTrainer(TracerPythonScript):
-    def __init__(self, **kwargs):
+    def __init__(self, datasets: Drive, **kwargs):
         super().__init__(__file__, raise_exception=True, parallel=True, **kwargs)
+
+        self.datasets = datasets
 
         self.script_dir = tempfile.mkdtemp()
         self.ready = False
@@ -27,15 +30,16 @@ class FlashTrainer(TracerPythonScript):
 
     def run(
         self,
-        root: Path,
+        dataset: str,
         task: str,
         data_config: Dict,
         task_config: Dict,
     ):
+        if not os.path.exists(dataset):
+            self.datasets.get(dataset)
+
         logging.info(f"Generating script in: {self.script_dir}")
-
         self.script_path = os.path.join(self.script_dir, "flash_training.py")
-
         self._task_meta = getattr(tasks, task)
 
         logging.info("Data config: {data_config}")
@@ -52,7 +56,6 @@ class FlashTrainer(TracerPythonScript):
             linked_attributes=self._task_meta.linked_attributes,
             data_config=data_config,
             task_config=task_config,
-            data_root=str(root),
         )
         logging.info(f"Running script: {self.script_path}")
 
