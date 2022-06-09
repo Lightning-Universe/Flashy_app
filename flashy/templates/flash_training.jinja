@@ -41,3 +41,6 @@ model = {{ task_class }}(
 
 trainer = flash.Trainer(max_epochs=1, accelerator="auto", callbacks=[AppProgressBar()], default_root_dir="{{ root }}")
 trainer.finetune(model, datamodule=datamodule, strategy="freeze")
+
+if trainer.interrupted:
+    sys.exit()

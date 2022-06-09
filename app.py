@@ -40,13 +40,10 @@ class Flashy(LightningFlow):
         self.hpo.run(root)
 
     def configure_layout(self):
-
-        layout = [
+        return [
             {"name": "Flashy", "content": self.ui},
             # {"name": "Results", "content": self.hpo},
         ]
-
-        return layout + self.hpo.dm.layout
 
 
 app = LightningApp(Flashy(), debug=False)

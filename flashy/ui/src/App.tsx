@@ -11,8 +11,8 @@ import ThemeProvider from "lightning-ui/src/design-system/theme";
 import Tabs, { TabItem } from "components/Tabs";
 import React from "react";
 import useSelectedTabState, { SelectedTabProvider } from "hooks/useSelectedTabState";
-import ResultsTable from "./components/ResultsTable";
 import { useLightningState } from "hooks/useLightningState";
+import ResultsTableGroup from "./components/ResultsTableGroup";
 
 const queryClient = new QueryClient();
 
@@ -29,7 +29,7 @@ function Results(props: {lightningState: any, updateLightningState: (newState: a
     return (
         <Stack order="column">
             <Banner />
-            <ResultsTable lightningState={props.lightningState} updateLightningState={props.updateLightningState}/>
+            <ResultsTableGroup lightningState={props.lightningState} updateLightningState={props.updateLightningState}/>
         </Stack>
     );
 }

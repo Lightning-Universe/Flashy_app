@@ -109,6 +109,7 @@ const DataConfig = React.forwardRef(
                 // TODO: Progress?
                 setUploadedDataset("");
                 setRequest(url.split("/").pop() as string)
+                setUrl("");
 
                 axios.post(lightningState.vars.file_upload_url + "/uploadurl/", {"url": url}).then(processResponse);
             }
@@ -163,7 +164,7 @@ const DataConfig = React.forwardRef(
                                 statusText=""
                                 value={dataConfig.get("url")}
                             />
-                            <PillButton text="Upload" onClick={startUrlUpload}/>
+                            <PillButton text="Upload" onClick={startUrlUpload} disabled={url == ""}/>
                         </Stack>
                     }
                 </Grid>
