@@ -30,14 +30,17 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
         "demo": {
             "backbone": tune.choice(["prajjwal1/bert-tiny"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": False,
         },
         "regular": {
             "backbone": tune.choice(["prajjwal1/bert-small"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": True,
         },
         "state-of-the-art!": {
             "backbone": tune.choice(["prajjwal1/bert-medium"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
+            "use_gpu": True,
         },
     },
 }
