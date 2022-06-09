@@ -17,7 +17,7 @@ class RunScheduler(WorkManager):
         for run in queued_runs:
             run_work = FlashTrainer(
                 cloud_compute=CloudCompute(
-                    "gpu" if run["model_config"].pop("use_gpu", False) else "cpu", 1
+                    "gpu" if run["model_config"].pop("use_gpu", False) else "cpu-small"
                 ),
             )
             self.register_work("runs", run["id"], run_work)
