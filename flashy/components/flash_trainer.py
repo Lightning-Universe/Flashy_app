@@ -4,11 +4,11 @@ import os.path
 import shutil
 import sys
 import tempfile
-from typing import Dict, Optional
+from typing import Dict
 
+from lightning import BuildConfig
 from lightning.components.python import TracerPythonScript
 from lightning.storage import Drive
-from lightning.storage.path import Path
 
 from flashy.components import tasks
 from flashy.components.tasks import TaskMeta
@@ -16,31 +16,44 @@ from flashy.components.utilities import generate_script
 
 
 class FlashTrainer(TracerPythonScript):
-    def __init__(self, datasets: Drive, **kwargs):
-        super().__init__(__file__, raise_exception=True, parallel=True, **kwargs)
+    def __init__(self, task: str, datasets: Drive, checkpoints: Drive, **kwargs):
+        super().__init__(
+            __file__,
+            cloud_build_config=BuildConfig(
+                requirements=getattr(tasks, task).requirements + ["requirements.txt"]
+            ),
+            raise_exception=True,
+            parallel=True,
+            **kwargs,
+        )
 
+        self.task = task
         self.datasets = datasets
+        self.checkpoints = checkpoints
+
+        self.id = None
 
         self.script_dir = tempfile.mkdtemp()
         self.ready = False
-        self.last_model_path: Optional[Path] = None
         self.monitor = None
         self.progress = 0.0
-        self._task_meta: Optional[TaskMeta] = None
+
+        self._task_meta: TaskMeta = getattr(tasks, task)
 
     def run(
         self,
+        id: str,
         dataset: str,
-        task: str,
         data_config: Dict,
         task_config: Dict,
     ):
+        self.id = id
+
         if not os.path.exists(dataset):
             self.datasets.get(dataset)
 
         logging.info(f"Generating script in: {self.script_dir}")
         self.script_path = os.path.join(self.script_dir, "flash_training.py")
-        self._task_meta = getattr(tasks, task)
 
         logging.info("Data config: {data_config}")
         logging.info("Task config: {task_config}")
@@ -48,7 +61,7 @@ class FlashTrainer(TracerPythonScript):
         generate_script(
             self.script_path,
             "flash_training.jinja",
-            task=task,
+            task=self.task,
             data_module_import_path=self._task_meta.data_module_import_path,
             data_module_class=self._task_meta.data_module_class,
             task_import_path=self._task_meta.task_import_path,
@@ -70,14 +83,13 @@ class FlashTrainer(TracerPythonScript):
         )
 
     def on_after_run(self, res):
-        checkpoint_path = os.path.join(self.script_dir, "last_checkpoint.pt")
+        checkpoint_path = f"{self.id}_checkpoint.pt"
         res["trainer"].save_checkpoint(checkpoint_path)
+        self.checkpoints.put(checkpoint_path)
 
         self.monitor = float(
             res["trainer"].callback_metrics[self._task_meta.monitor].item()
         )
-        self.last_model_path = Path(checkpoint_path)
-        logging.info(f"Stored last model path: {self.last_model_path}")
 
     def on_exit(self):
         shutil.rmtree(self.script_dir)

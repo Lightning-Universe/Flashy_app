@@ -109,6 +109,6 @@ class FileServer(LightningWork):
         async def get_file(filename: str):
             if not os.path.exists(filename):
                 self.drive.get(filename)
-            return FileResponse(os.path.join(self.root, filename))
+            return FileResponse(filename)
 
         uvicorn.run(app, host=self.host, port=self.port)

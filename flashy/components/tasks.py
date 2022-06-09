@@ -12,6 +12,7 @@ class TaskMeta:
     monitor: str
     supports_fiftyone: bool
     supports_gradio: bool
+    requirements: List[str]
 
 
 image_classification = TaskMeta(
@@ -23,6 +24,7 @@ image_classification = TaskMeta(
     "val_accuracy",
     True,
     False,
+    ["lightning-flash[image]==0.7.5"],
 )
 
 text_classification = TaskMeta(
@@ -34,4 +36,5 @@ text_classification = TaskMeta(
     "val_accuracy",
     False,
     True,
+    ["lightning-flash[text]==0.7.5"],
 )

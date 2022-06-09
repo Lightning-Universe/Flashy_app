@@ -63,10 +63,10 @@ class HPOManager(LightningFlow):
     """The HPOManager is used to suggest a list of configurations (hyper-parameters) to run with some configuration from
     the user for the given task."""
 
-    def __init__(self, datasets: Drive):
+    def __init__(self, datasets: Drive, checkpoints: Drive):
         super().__init__()
 
-        self.runs = RunScheduler(datasets)
+        self.runs = RunScheduler(datasets, checkpoints)
 
         self.start = False
         self.dataset: Optional[str] = None
@@ -121,7 +121,7 @@ class HPOManager(LightningFlow):
                     if run_work.has_succeeded:
                         self.results[sweep_id][run["id"]] = {
                             "run": run,
-                            "progress": 1.0,
+                            "progress": "succeeded",
                             "monitor": run_work.monitor,
                         }
                     elif run_work.has_failed:

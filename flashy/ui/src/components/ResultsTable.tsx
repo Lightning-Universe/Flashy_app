@@ -6,16 +6,18 @@ import {
     Table,
 } from "lightning-ui/src/design-system/components";
 import RunProgress from "./RunProgress";
+import MoreMenu from "./MoreMenu";
 
 
-function ResultRow(run: { id: string, task: string, model_config: any, data_config: any }, progress: number | "failed" | "launching" | "stopped", lightningState: any, updateLightningState: (newState: any) => void, monitor?: number): ReactNode[] {
+function ResultRow(run: { id: string, task: string, model_config: any, data_config: any }, progress: number | "failed" | "launching" | "stopped" | "succeeded", lightningState: any, updateLightningState: (newState: any) => void, monitor?: number): ReactNode[] {
     return [
         run.id,
-        <RunProgress value={progress} id={run.id} lightningState={lightningState} updateLightningState={updateLightningState}/>,
+        <RunProgress value={progress} id={run.id} lightningState={lightningState} updateLightningState={updateLightningState} />,
         ...Object.entries(run.model_config).map(
             (value: any)  => value[1]
         ),
         monitor? monitor: "-",
+        <MoreMenu value={progress} id={run.id} lightningState={lightningState} updateLightningState={updateLightningState} />,
     ]
 }
 
@@ -27,7 +29,7 @@ export default function ResultsTable(props: {sweepId: string, results: any, ligh
                 (value: any) => ResultRow(value[1].run, value[1].progress, props.lightningState, props.updateLightningState, value[1].monitor)
             )
 
-            const header = ["ID", "Progress", ...Object.entries((Object.entries(props.results) as any[])[0][1].run.model_config).map((value: any) => value[0]), "Performance"]
+            const header = ["ID", "Progress", ...Object.entries((Object.entries(props.results) as any[])[0][1].run.model_config).map((value: any) => value[0]), "Performance", "More"]
 
             return (
                 <Stack direction={"column"} spacing={3}>
