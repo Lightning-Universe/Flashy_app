@@ -6,8 +6,6 @@ from {{ task_import_path }} import {{ task_class }}
 from pytorch_lightning.callbacks.progress.base import ProgressBarBase
 from lightning.utilities.state import AppState
 
-os.chdir("{{ data_root }}")
-
 app_state = sys.argv[1]
 
 class AppProgressBar(ProgressBarBase):

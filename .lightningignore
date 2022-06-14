@@ -163,4 +163,4 @@ lightning_logs
 
 *.pt
 
-node_modules
+flashy/ui/node_modules/

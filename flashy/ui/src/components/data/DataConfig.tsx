@@ -22,18 +22,20 @@ export type DataConfigProps = {
     value: Map<string, any>;
     example: Map<string, any>;
     onChange: (config: Map<string, any>) => void;
+    dataset: {drivePath: string, displayName: string};
+    onChangeDataset: (dataset: {drivePath: string, displayName: string}) => void;
     lightningState: any;
 };
 
 const DataConfig = React.forwardRef(
     (
-        { dataOptions, value, example, onChange, lightningState }: DataConfigProps,
+        { dataOptions, value, example, onChange, dataset, onChangeDataset, lightningState }: DataConfigProps,
         ref,
     ) => {
         const [datasetFormat, setDatasetFormat] = React.useState('url');
         const [request, setRequest] = React.useState("");
         const [url, setUrl] = React.useState("" as null | string);
-        const [uploadedDataset, setUploadedDataset] = React.useState('');
+        // const [uploadedDataset, setUploadedDataset] = React.useState('');
         const [dirs, setDirs] = React.useState([]);
         const [files, setFiles] = React.useState([]);
 
@@ -49,7 +51,7 @@ const DataConfig = React.forwardRef(
         // Trigger a refresh with the new format if it wasn't set
         if (formatIndex == -1) {
             formatIndex = 0
-            dataConfig = new Map([["url", dataConfig.get("url")], ["target", dataOptions.formats[formatIndex].name]])
+            dataConfig = new Map([["target", dataOptions.formats[formatIndex].name]])
             onChange(dataConfig)
         }
 
@@ -59,7 +61,7 @@ const DataConfig = React.forwardRef(
         for (let i = 0; i < format.arguments.length; i++)  {
             let argument = format.arguments[i]
             widgets.push(
-                <Grid item xs={12} md={6} key={argument.name} sx={{display: (uploadedDataset? "initial": "none")}}>
+                <Grid item xs={12} md={6} key={argument.name} sx={{display: (dataset.drivePath? "initial": "none")}}>
                     <Widget
                         argument={argument}
                         value={dataConfig.get(argument.name)}
@@ -73,14 +75,14 @@ const DataConfig = React.forwardRef(
         }
 
         function processResponse(response: AxiosResponse) {
-            setUploadedDataset(response.data.path);
+            onChangeDataset({drivePath: response.data.drive_path, displayName: response.data.display_name});
 
-            axios.get(lightningState.vars.file_upload_url + "/listdirs/" + response.data.path).then((response) => {
-                setDirs(response.data)
+            axios.get(lightningState.vars.file_upload_url + "/listsubdirs/" + response.data.drive_path + "/").then((response) => {
+                setDirs(response.data.asset_names)
             });
 
-            axios.get(lightningState.vars.file_upload_url + "/listfiles/" + response.data.path).then((response) => {
-                setFiles(response.data)
+            axios.get(lightningState.vars.file_upload_url + "/listarchive/" + response.data.drive_path + "/").then((response) => {
+                setFiles(response.data.asset_names)
             });
         }
 
@@ -95,23 +97,30 @@ const DataConfig = React.forwardRef(
 
             if (lightningState) {
                 // TODO: Progress?
-                setUploadedDataset("");
+                onChangeDataset({drivePath: "", displayName: ""});
                 setRequest(files[0].name);
 
                 const headers={'Content-Type': "application/zip"}
 
-                axios.post(lightningState.vars.file_upload_url + "/uploadzip/", formData, {"headers": headers}).then(processResponse);
+                axios.post(lightningState.vars.file_upload_url + "/uploadfile/", formData, {"headers": headers}).then(processResponse);
             }
         }
 
         function startUrlUpload() {
             if (lightningState && url) {
+                const formData = new FormData();
+
+                formData.append(
+                    "url",
+                    url,
+                );
+
                 // TODO: Progress?
-                setUploadedDataset("");
+                onChangeDataset({drivePath: "", displayName: ""});
                 setRequest(url.split("/").pop() as string)
                 setUrl("");
 
-                axios.post(lightningState.vars.file_upload_url + "/uploadurl/", {"url": url}).then(processResponse);
+                axios.post(lightningState.vars.file_upload_url + "/uploadurl/", formData).then(processResponse);
             }
         }
 
@@ -126,12 +135,12 @@ const DataConfig = React.forwardRef(
             onDropAccepted: startFileUpload,
         });
 
-        let dataset = <></>
+        let datasetProgress = <></>
 
-        if (request && !uploadedDataset) {
-            dataset = <Stack direction="row" spacing={2}><CircularProgress size="24px" /><Typography variant="body2">Uploading {request}</Typography></Stack>
+        if (request && !dataset.drivePath) {
+            datasetProgress = <Stack direction="row" spacing={2}><CircularProgress size="24px" /><Typography variant="body2">Uploading {request}</Typography></Stack>
         } else if (request) {
-            dataset = <Typography variant="h6">Select splits for {uploadedDataset}</Typography>
+            datasetProgress = <Typography variant="h6">Select splits for {dataset.displayName}</Typography>
         }
 
         return (
@@ -162,20 +171,20 @@ const DataConfig = React.forwardRef(
                                 onChange={setUrl}
                                 fullWidth
                                 statusText=""
-                                value={dataConfig.get("url")}
+                                value={url}
                             />
                             <PillButton text="Upload" onClick={startUrlUpload} disabled={url == ""}/>
                         </Stack>
                     }
                 </Grid>
                 <Grid item xs={12}>
-                    {dataset}
+                    {datasetProgress}
                 </Grid>
-                <Grid item xs={12} sx={{display: (uploadedDataset? "initial": "none")}}>
+                <Grid item xs={12} sx={{display: (dataset.drivePath? "initial": "none")}}>
                     <PillSelect
                         helperText=""
                         label="Format"
-                        onChange={(value: any) => onChange(new Map([["url", dataConfig.get("url")], [ "target", value]]))}
+                        onChange={(value: any) => onChange(new Map([[ "target", value]]))}
                         options={dataOptions.formats.map(
                             (format: Format) => {return {label: format.name, value: format.label,}}
                         )}

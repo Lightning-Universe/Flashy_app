@@ -1,4 +1,4 @@
-import * as React from "react";
+import React from "react";
 
 import {IconButton, Typography,} from "lightning-ui/src/design-system/components";
 import Status, {StatusEnum} from "lightning-ui/src/shared/components/Status";
@@ -21,7 +21,7 @@ const BorderLinearProgress = styled(LinearProgress)(({ theme }) => ({
 }));
 
 export type RunProgressProps = {
-    value: number | "failed" | "launching" | "stopped";
+    value: number | "failed" | "launching" | "stopped" | "succeeded";
     id: string;
     lightningState: any;
     updateLightningState: (newState: any) => void;
@@ -54,14 +54,12 @@ const RunProgress = React.forwardRef(
             return (
                 <Status status={StatusEnum.STOPPED}/>
             )
+        } else if (value == "succeeded") {
+            return (
+                <Status status={StatusEnum.SUCCEEDED}/>
+            )
         } else {
             value = Math.round(value * 100)
-
-            if (value >= 100) {
-                return (
-                    <Status status={StatusEnum.SUCCEEDED}/>
-                )
-            }
 
             return (
                 <Box sx={{display: "flex", alignItems: "center", height:"20px"}}>

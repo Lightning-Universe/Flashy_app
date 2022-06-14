@@ -16,7 +16,7 @@ class FlashGradio(TracerPythonScript):
         super().__init__(
             __file__,
             parallel=True,
-            run_once=False,
+            cache_calls=False,
             raise_exception=False,
         )
 
