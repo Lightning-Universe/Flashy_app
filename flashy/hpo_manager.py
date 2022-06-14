@@ -20,7 +20,7 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
             "learning_rate": tune.uniform(0.00001, 0.01),
             "use_gpu": True,
         },
-        "state-of-the-art!": {
+        "sota": {
             "backbone": tune.choice(["resnet101", "efficientnet_b4"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
             "use_gpu": True,
@@ -37,7 +37,7 @@ _search_spaces: Dict[str, Dict[str, Dict[str, tune.sample.Domain]]] = {
             "learning_rate": tune.uniform(0.00001, 0.01),
             "use_gpu": True,
         },
-        "state-of-the-art!": {
+        "sota": {
             "backbone": tune.choice(["prajjwal1/bert-medium"]),
             "learning_rate": tune.uniform(0.00001, 0.01),
             "use_gpu": True,

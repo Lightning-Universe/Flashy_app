@@ -22,8 +22,8 @@ export type DataConfigProps = {
     value: Map<string, any>;
     example: Map<string, any>;
     onChange: (config: Map<string, any>) => void;
-    dataset: string;
-    onChangeDataset: (dataset: string) => void;
+    dataset: {drivePath: string, displayName: string};
+    onChangeDataset: (dataset: {drivePath: string, displayName: string}) => void;
     lightningState: any;
 };
 
@@ -61,7 +61,7 @@ const DataConfig = React.forwardRef(
         for (let i = 0; i < format.arguments.length; i++)  {
             let argument = format.arguments[i]
             widgets.push(
-                <Grid item xs={12} md={6} key={argument.name} sx={{display: (dataset? "initial": "none")}}>
+                <Grid item xs={12} md={6} key={argument.name} sx={{display: (dataset.drivePath? "initial": "none")}}>
                     <Widget
                         argument={argument}
                         value={dataConfig.get(argument.name)}
@@ -75,14 +75,14 @@ const DataConfig = React.forwardRef(
         }
 
         function processResponse(response: AxiosResponse) {
-            onChangeDataset(response.data.path);
+            onChangeDataset({drivePath: response.data.drive_path, displayName: response.data.display_name});
 
-            axios.get(lightningState.vars.file_upload_url + "/listdirs/" + response.data.path).then((response) => {
-                setDirs(response.data)
+            axios.get(lightningState.vars.file_upload_url + "/listsubdirs/" + response.data.drive_path + "/").then((response) => {
+                setDirs(response.data.asset_names)
             });
 
-            axios.get(lightningState.vars.file_upload_url + "/listfiles/" + response.data.path).then((response) => {
-                setFiles(response.data)
+            axios.get(lightningState.vars.file_upload_url + "/listarchive/" + response.data.drive_path + "/").then((response) => {
+                setFiles(response.data.asset_names)
             });
         }
 
@@ -97,23 +97,30 @@ const DataConfig = React.forwardRef(
 
             if (lightningState) {
                 // TODO: Progress?
-                onChangeDataset("");
+                onChangeDataset({drivePath: "", displayName: ""});
                 setRequest(files[0].name);
 
                 const headers={'Content-Type': "application/zip"}
 
-                axios.post(lightningState.vars.file_upload_url + "/uploadzip/", formData, {"headers": headers}).then(processResponse);
+                axios.post(lightningState.vars.file_upload_url + "/uploadfile/", formData, {"headers": headers}).then(processResponse);
             }
         }
 
         function startUrlUpload() {
             if (lightningState && url) {
+                const formData = new FormData();
+
+                formData.append(
+                    "url",
+                    url,
+                );
+
                 // TODO: Progress?
-                onChangeDataset("");
+                onChangeDataset({drivePath: "", displayName: ""});
                 setRequest(url.split("/").pop() as string)
                 setUrl("");
 
-                axios.post(lightningState.vars.file_upload_url + "/uploadurl/", {"url": url}).then(processResponse);
+                axios.post(lightningState.vars.file_upload_url + "/uploadurl/", formData).then(processResponse);
             }
         }
 
@@ -130,10 +137,10 @@ const DataConfig = React.forwardRef(
 
         let datasetProgress = <></>
 
-        if (request && !dataset) {
+        if (request && !dataset.drivePath) {
             datasetProgress = <Stack direction="row" spacing={2}><CircularProgress size="24px" /><Typography variant="body2">Uploading {request}</Typography></Stack>
         } else if (request) {
-            datasetProgress = <Typography variant="h6">Select splits for {dataset}</Typography>
+            datasetProgress = <Typography variant="h6">Select splits for {dataset.displayName}</Typography>
         }
 
         return (
@@ -173,7 +180,7 @@ const DataConfig = React.forwardRef(
                 <Grid item xs={12}>
                     {datasetProgress}
                 </Grid>
-                <Grid item xs={12} sx={{display: (dataset? "initial": "none")}}>
+                <Grid item xs={12} sx={{display: (dataset.drivePath? "initial": "none")}}>
                     <PillSelect
                         helperText=""
                         label="Format"

@@ -30,11 +30,11 @@ class Flashy(LightningFlow):
         self.ui = ReactUI()
         self.hpo = HPOManager(self.datasets, self.checkpoints)
 
-        self.file_upload = FileServer(self.datasets, run_once=True, parallel=True)
+        self.file_upload = FileServer(self.datasets, cache_calls=True, parallel=True)
         self.file_upload_url: str = ""
 
         self.checkpoints_server = FileServer(
-            self.datasets, run_once=True, parallel=True
+            self.checkpoints, cache_calls=True, parallel=True
         )
         self.checkpoints_server_url: str = ""
 

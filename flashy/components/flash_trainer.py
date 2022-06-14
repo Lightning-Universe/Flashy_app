@@ -1,9 +1,12 @@
+import json
 import logging
 import os
 import os.path
 import shutil
 import sys
+import tarfile
 import tempfile
+import zipfile
 from typing import Dict
 
 from lightning import BuildConfig
@@ -20,7 +23,7 @@ class FlashTrainer(TracerPythonScript):
         super().__init__(
             __file__,
             cloud_build_config=BuildConfig(
-                requirements=getattr(tasks, task).requirements + ["requirements.txt"]
+                requirements=getattr(tasks, task).requirements
             ),
             raise_exception=True,
             parallel=True,
@@ -49,8 +52,28 @@ class FlashTrainer(TracerPythonScript):
     ):
         self.id = id
 
+        meta_file_path = dataset + ".meta"
+
         if not os.path.exists(dataset):
             self.datasets.get(dataset)
+        if not os.path.exists(meta_file_path):
+            self.datasets.get(meta_file_path)
+
+        with open(meta_file_path) as f:
+            meta = json.load(f)
+
+        os.replace(dataset, meta["original_path"])
+
+        file_path = meta["original_path"]
+
+        if zipfile.is_zipfile(file_path):
+            with zipfile.ZipFile(file_path, "r") as zf:
+                zf.extractall(".")
+        elif tarfile.is_tarfile(file_path):
+            with tarfile.TarFile(file_path, "r") as tf:
+                tf.extractall(".")
+        else:
+            raise ValueError("Cannot open archive file!")
 
         logging.info(f"Generating script in: {self.script_dir}")
         self.script_path = os.path.join(self.script_dir, "flash_training.py")

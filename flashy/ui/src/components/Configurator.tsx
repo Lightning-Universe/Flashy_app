@@ -104,7 +104,7 @@ export default function Configurator(props: {lightningState: any, updateLightnin
     const [targetPerformance, setTargetPerformance] = React.useState('low');
     // const [showLaunchingSpinner, setShowLaunchingSpinner] = React.useState(false);
 
-    const [dataset, setDataset] = React.useState("");
+    const [dataset, setDataset] = React.useState({drivePath: "", displayName: ""});
     const [dataConfig, setDataConfig] = React.useState(new Map());
     const [demoDataConfig, setDemoDataConfig] = React.useState(Demos[0].config);
 
@@ -113,7 +113,7 @@ export default function Configurator(props: {lightningState: any, updateLightnin
             // Create and send new state
             const newLightningState = cloneDeep(props.lightningState);
             newLightningState.flows.hpo.vars.start = true;
-            newLightningState.flows.hpo.vars.dataset = dataset;
+            newLightningState.flows.hpo.vars.dataset = dataset.drivePath;
             newLightningState.flows.hpo.vars.selected_task = task;
             newLightningState.flows.hpo.vars.data_config = Object.fromEntries(dataConfig);
             newLightningState.flows.hpo.vars.model = modelType;
@@ -176,8 +176,8 @@ export default function Configurator(props: {lightningState: any, updateLightnin
                                 value: "Demo",
                             },
                             {
-                                label: "average",
-                                value: "Average",
+                                label: "regular",
+                                value: "Regular",
                             },
                             {
                                 label: "sota",

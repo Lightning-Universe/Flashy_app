@@ -4,7 +4,6 @@ import shutil
 import tempfile
 from typing import Dict, List, Optional
 
-from flash.core.integrations.fiftyone import visualize
 from lightning import BuildConfig
 from lightning.components.python import TracerPythonScript
 from lightning.storage.path import Path
@@ -17,7 +16,7 @@ from flashy.components.utilities import generate_script
 class FiftyOneBuildConfig(BuildConfig):
     def build_commands(self) -> List[str]:
         return [
-            "pip install fiftyone==0.15.1",
+            "pip install lightning-flash[image]==0.7.5 fiftyone==0.15.1",
             "pip uninstall -y opencv-python",
             "pip uninstall -y opencv-python-headless",
             "pip install opencv-python-headless==4.5.5.64",
@@ -28,7 +27,7 @@ class FlashFiftyOne(TracerPythonScript):
     def __init__(self):
         super().__init__(
             __file__,
-            run_once=False,
+            cache_calls=False,
             parallel=True,
             port=5151,
             cloud_build_config=FiftyOneBuildConfig(),
@@ -77,6 +76,8 @@ class FlashFiftyOne(TracerPythonScript):
         super().run()
 
     def on_after_run(self, res):
+        from flash.core.integrations.fiftyone import visualize
+
         logging.info("Launching FiftyOne")
 
         if self._session is not None:

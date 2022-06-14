@@ -21,7 +21,7 @@ const MoreMenu = React.forwardRef(
         const [checkpointDialogOpen, setCheckpointDialogOpen] = React.useState(false);
         const [anchorEl, setAnchorEl] = React.useState(null);
 
-        const checkpointUrl = lightningState?.vars.checkpoints_server_url + "/files/" + id + "_checkpoint.pt";
+        const checkpointUrl = lightningState?.vars.checkpoints_server_url + "/file/" + id + "_checkpoint.pt";
 
         const handleClick = (event: any) => {
             setAnchorEl(event.currentTarget);
@@ -58,7 +58,10 @@ const MoreMenu = React.forwardRef(
                         horizontal: 'right',
                     }}
                 >
-                    <MenuItem onClick={() => setCheckpointDialogOpen(true)} disabled={value != "succeeded"}>
+                    <MenuItem onClick={() => {
+                        setCheckpointDialogOpen(true);
+                        handleClose();
+                    }} disabled={value != "succeeded"}>
                         <ListItemIcon>
                             <IosShareSharpIcon sx={{ fontSize: 16 }} />
                         </ListItemIcon>
