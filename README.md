@@ -21,8 +21,8 @@ pip install -e .
 python scripts/download_frontend.py
 
 cd ../
-git clone https://github.com/Lightning-AI/lightning-auto-ml
-cd lightning-auto-ml
+git clone https://github.com/Lightning-AI/LAI-Flashy-App
+cd LAI-Flashy-App
 # For local install, we keep a separate requirements file. The cloud app uses requirements.txt file.
 pip install -r requirements-dev.txt
 pip install -e .
