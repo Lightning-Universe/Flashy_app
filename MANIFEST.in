@@ -13,6 +13,8 @@ recursive-include flashy *.py
 # Include templates
 recursive-include flashy/templates *.jinja
 
+recursive-include flashy/ui/build
+
 # Include the license file
 include LICENSE
 
