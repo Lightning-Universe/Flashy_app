@@ -14,14 +14,14 @@ Let's first start with setting up the environment, and installing the requiremen
 conda create --name lightning python=3.8
 conda activate lightning
 
-git clone https://github.com/PyTorchLightning/lightning
+git clone https://github.com/Lightning-AI/lightning
 cd lightning
 pip install -r requirements.txt
 pip install -e .
 python scripts/download_frontend.py
 
 cd ../
-git clone https://github.com/PyTorchLightning/lightning-auto-ml
+git clone https://github.com/Lightning-AI/lightning-auto-ml
 cd lightning-auto-ml
 # For local install, we keep a separate requirements file. The cloud app uses requirements.txt file.
 pip install -r requirements-dev.txt

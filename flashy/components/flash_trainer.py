@@ -9,9 +9,9 @@ import tempfile
 import zipfile
 from typing import Dict
 
-from lightning import BuildConfig
-from lightning.components.python import TracerPythonScript
-from lightning.storage import Drive
+import lightning as L
+from lightning.app.components.python import TracerPythonScript
+from lightning.app.storage import Drive
 
 from flashy.components import tasks
 from flashy.components.tasks import TaskMeta
@@ -22,7 +22,7 @@ class FlashTrainer(TracerPythonScript):
     def __init__(self, task: str, datasets: Drive, checkpoints: Drive, **kwargs):
         super().__init__(
             __file__,
-            cloud_build_config=BuildConfig(
+            cloud_build_config=L.BuildConfig(
                 requirements=getattr(tasks, task).requirements
             ),
             raise_exception=True,

@@ -2,8 +2,8 @@ import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
-from lightning import LightningFlow
-from lightning.storage import Drive
+import lightning as L
+from lightning.app.storage import Drive
 from ray import tune
 
 from flashy.run_scheduler import RunScheduler
@@ -59,7 +59,7 @@ def _generate_runs(count: int, task: str, search_space: Dict) -> List[Dict[str, 
     return runs
 
 
-class HPOManager(LightningFlow):
+class HPOManager(L.LightningFlow):
     """The HPOManager is used to suggest a list of configurations (hyper-parameters) to run with some configuration from
     the user for the given task."""
 

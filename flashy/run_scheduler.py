@@ -1,8 +1,8 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from lightning import CloudCompute
-from lightning.storage import Drive
+import lightning as L
+from lightning.app.storage import Drive
 
 from flashy.components.flash_trainer import FlashTrainer
 from flashy.components.work_manager import WorkManager
@@ -22,7 +22,7 @@ class RunScheduler(WorkManager):
                 run["task"],
                 self.datasets,
                 self.checkpoints,
-                cloud_compute=CloudCompute(
+                cloud_compute=L.CloudCompute(
                     "gpu" if run["model_config"].pop("use_gpu", False) else "cpu-small"
                 ),
             )

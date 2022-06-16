@@ -30,7 +30,7 @@ setup(
     author=about.__author__,
     author_email=about.__author_email__,
     url=about.__homepage__,
-    download_url="https://github.com/PyTorchLightning/automl_app",
+    download_url="https://github.com/Lightning-AI/lightning-auto-ml",
     license=about.__license__,
     packages=find_packages(exclude=["tests", "tests.*"]),
     long_description=long_description,
