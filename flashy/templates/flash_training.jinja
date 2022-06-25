@@ -4,7 +4,7 @@ import flash
 from {{ data_module_import_path }} import {{ data_module_class }}
 from {{ task_import_path }} import {{ task_class }}
 from pytorch_lightning.callbacks.progress.base import ProgressBarBase
-from lightning.utilities.state import AppState
+from lightning.app.utilities.state import AppState
 
 app_state = sys.argv[1]
 
