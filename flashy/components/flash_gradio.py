@@ -3,8 +3,8 @@ import os
 import tempfile
 from typing import Dict, Optional
 
-from lightning.components.python import TracerPythonScript
-from lightning.storage.path import Path
+from lightning.app.components.python import TracerPythonScript
+from lightning.app.storage.path import Path
 
 from flashy.components import tasks
 from flashy.components.tasks import TaskMeta
