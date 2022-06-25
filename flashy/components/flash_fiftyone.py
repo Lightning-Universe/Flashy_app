@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from typing import Dict, List, Optional
 
-import lightning
+import lightning as L
 from lightning.app.components.python import TracerPythonScript
 from lightning.app.storage.path import Path
 
