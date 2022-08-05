@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from time import sleep
 from typing import Generator
 
+import pytest
 import requests
 from lightning.app.testing.config import Config
 from lightning.app.utilities.imports import _is_playwright_available, requires
@@ -212,7 +213,9 @@ def validate_app_functionalities(app_page: "Page") -> None:
 #         with launch_from_gallery_app_page(gallery_page) as app_page:
 #             validate_app_functionalities(app_page)
 
-
+@pytest.mark.skipif(
+    not os.getenv("TEST_APP_NAME", None), reason="requires TEST_APP_NAME env var"
+)
 def test_clone_and_run_app_from_gallery():
     app_name = os.getenv("TEST_APP_NAME", None)
     if app_name is None:
