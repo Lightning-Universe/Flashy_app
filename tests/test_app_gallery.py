@@ -209,15 +209,15 @@ def validate_app_functionalities(app_page: "Page") -> None:
     # TODO: add more validations.
 
 
-# TODO: when the launch button works with the app.
-# def test_launch_app_from_gallery():
-#     app_name = os.getenv("TEST_APP_NAME", None)
-#     if app_name is None:
-#         raise ValueError("TEST_APP_NAME environment variable is not set")
-#
-#     with get_gallery_app_page(app_name) as gallery_page:
-#         with launch_from_gallery_app_page(gallery_page) as app_page:
-#             validate_app_functionalities(app_page)
+@pytest.mark.skip(reason="launch button doesn't work for this app")
+def test_launch_app_from_gallery():
+    app_name = os.getenv("TEST_APP_NAME", None)
+    if app_name is None:
+        raise ValueError("TEST_APP_NAME environment variable is not set")
+
+    with get_gallery_app_page(app_name) as gallery_page:
+        with launch_from_gallery_app_page(gallery_page) as app_page:
+            validate_app_functionalities(app_page)
 
 @pytest.mark.skipif(
     not os.getenv("TEST_APP_NAME", None), reason="requires TEST_APP_NAME env var"
