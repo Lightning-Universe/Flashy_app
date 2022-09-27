@@ -135,6 +135,9 @@ def clone_and_run_from_gallery_app_page(app_gallery_page) -> Generator:
     lightning_app_id = str(app_page.url).split(".")[0].split("//")[-1]
     print(f"The Lightning Id Name : [bold magenta]{lightning_app_id}[/bold magenta]")
 
+    # Sleep to give the works time to start-up
+    sleep(5 * 60)
+
     try:
         yield admin_page, app_page, fetch_logs
     except KeyboardInterrupt:
@@ -192,7 +195,6 @@ def validate_app_functionalities(app_page: "Page") -> None:
     input_field.wait_for(timeout=1000)
     input_field.type("https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip")
     sleep(1)
-    "input:right-of(:text(\"Username\"))"
     upload_btn = app_page.frame_locator("iframe").locator("button:has-text(\"Upload\")")
     upload_btn.wait_for(timeout=1000)
     upload_btn.click()
