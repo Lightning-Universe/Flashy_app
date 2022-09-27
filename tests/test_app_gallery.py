@@ -14,7 +14,7 @@ from lightning_cloud.openapi.rest import ApiException
 
 if _is_playwright_available():
     import playwright
-    from playwright.sync_api import HttpCredentials, sync_playwright
+    from playwright.sync_api import HttpCredentials, sync_playwright, expect
 
 
 @requires("playwright")
@@ -202,9 +202,9 @@ def validate_app_functionalities(app_page: "Page") -> None:
     train_btn = app_page.frame_locator("iframe").locator("button:has-text(\"Start training!\")")
     train_btn.wait_for(timeout=1000)
     train_btn.click()
-    sleep(10)
+
     runs = app_page.frame_locator("iframe").locator("table tbody tr")
-    assert runs.count() > 0
+    expect(runs).to_have_count(1, timeout=120)
 
     # TODO: add more validations.
 
