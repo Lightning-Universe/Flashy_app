@@ -204,7 +204,7 @@ def validate_app_functionalities(app_page: "Page") -> None:
     train_btn.click()
 
     runs = app_page.frame_locator("iframe").locator("table tbody tr")
-    expect(runs).to_have_count(1, timeout=120)
+    expect(runs).to_have_count(1, timeout=120000)
 
     # TODO: add more validations.
 
