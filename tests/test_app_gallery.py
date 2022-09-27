@@ -2,7 +2,6 @@ import json
 import os
 from contextlib import contextmanager
 from time import sleep
-import time
 from typing import Generator
 
 import pytest
@@ -137,7 +136,7 @@ def clone_and_run_from_gallery_app_page(app_gallery_page) -> Generator:
     print(f"The Lightning Id Name : [bold magenta]{lightning_app_id}[/bold magenta]")
 
     # Sleep to give the works time to start-up
-    time.sleep(5 * 60)
+    sleep(5 * 60)
 
     try:
         yield admin_page, app_page, fetch_logs
