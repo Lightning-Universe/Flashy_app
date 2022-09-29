@@ -11,10 +11,11 @@ from lightning.app.utilities.imports import _is_playwright_available, requires
 from lightning_app.utilities.cloud import _get_project
 from lightning_app.utilities.network import LightningClient
 from lightning_cloud.openapi.rest import ApiException
+from lightning_cloud.openapi import V1LightningworkState
 
 if _is_playwright_available():
     import playwright
-    from playwright.sync_api import HttpCredentials, sync_playwright, expect
+    from playwright.sync_api import Page, HttpCredentials, sync_playwright, expect
 
 
 @requires("playwright")
@@ -135,8 +136,27 @@ def clone_and_run_from_gallery_app_page(app_gallery_page) -> Generator:
     lightning_app_id = str(app_page.url).split(".")[0].split("//")[-1]
     print(f"The Lightning Id Name : [bold magenta]{lightning_app_id}[/bold magenta]")
 
-    # Sleep to give the works time to start-up
-    sleep(5 * 60)
+    # Sleep until the file server is running
+    client = LightningClient()
+    project = _get_project(client)
+
+    running = False
+
+    while not running:
+        sleep(10)
+
+        works = client.lightningwork_service_list_lightningwork(
+            project_id=project.project_id,
+            app_id=lightning_app_id,
+        ).lightningworks
+
+        for work in works:
+            if work.name == "root.file_upload":
+                if work.status.phase == V1LightningworkState.RUNNING:
+                    running = True
+
+    # Sleep to give the server time to start
+    sleep(180)
 
     try:
         yield admin_page, app_page, fetch_logs
@@ -201,10 +221,29 @@ def validate_app_functionalities(app_page: "Page") -> None:
 
     sleep(10)
 
+    train_folder_dropdown = app_page.frame_locator("iframe").locator('#mui-2')
+    train_folder_dropdown.click()
+
+    train_folder = app_page.frame_locator("iframe").locator('text="hymenoptera_data/train"')
+    train_folder.scroll_into_view_if_needed()
+    train_folder.click()
+
+    val_folder_dropdown = app_page.frame_locator("iframe").locator('#mui-3')
+    val_folder_dropdown.click()
+
+    val_folder = app_page.frame_locator("iframe").locator('text="hymenoptera_data/val"')
+    val_folder.scroll_into_view_if_needed()
+    val_folder.click()
+
     train_btn = app_page.frame_locator("iframe").locator("button:has-text(\"Start training!\")")
-    train_btn.wait_for(timeout=1000)
     train_btn.click()
 
+    # Sometimes the results don't show until we refresh the page
+    sleep(10)
+
+    app_page.reload()
+
+    app_page.frame_locator("iframe").locator('button:has-text("RESULTS")').click()
     runs = app_page.frame_locator("iframe").locator("table tbody tr")
     expect(runs).to_have_count(1, timeout=120000)
 
@@ -221,6 +260,7 @@ def test_launch_app_from_gallery():
         with launch_from_gallery_app_page(gallery_page) as app_page:
             validate_app_functionalities(app_page)
 
+
 @pytest.mark.skipif(
     not os.getenv("TEST_APP_NAME", None), reason="requires TEST_APP_NAME env var"
 )
@@ -232,3 +272,13 @@ def test_clone_and_run_app_from_gallery():
     with get_gallery_app_page(app_name) as gallery_page:
         with clone_and_run_from_gallery_app_page(gallery_page) as (_, app_page, _):
             validate_app_functionalities(app_page)
+
+
+def test_app_locally():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        page = browser.new_page()
+
+        page.goto("http://127.0.0.1:7501/view/Flashy")
+
+        validate_app_functionalities(page)
