@@ -2,6 +2,7 @@ import json
 import os
 from contextlib import contextmanager
 from time import sleep
+import time
 from typing import Generator
 
 import pytest
@@ -11,6 +12,7 @@ from lightning.app.utilities.imports import _is_playwright_available, requires
 from lightning_app.utilities.cloud import _get_project
 from lightning_app.utilities.network import LightningClient
 from lightning_cloud.openapi.rest import ApiException
+from lightning_cloud.openapi import V1LightningworkState
 
 if _is_playwright_available():
     import playwright
@@ -135,8 +137,27 @@ def clone_and_run_from_gallery_app_page(app_gallery_page) -> Generator:
     lightning_app_id = str(app_page.url).split(".")[0].split("//")[-1]
     print(f"The Lightning Id Name : [bold magenta]{lightning_app_id}[/bold magenta]")
 
-    # Sleep to give the works time to start-up
-    sleep(5 * 60)
+    # Sleep until the file server is ready
+    client = LightningClient()
+    project = _get_project(client)
+
+    running = False
+
+    while not running:
+        time.sleep(10)
+
+        works = client.lightningwork_service_list_lightningwork(
+            project_id=project.project_id,
+            app_id=lightning_app_id,
+        ).lightningworks
+
+        for work in works:
+            if work.name == "root.file_upload":
+                if work.status.phase == V1LightningworkState.RUNNING:
+                    running = True
+
+    # Sleep to give the server time to start
+    time.sleep(30)
 
     try:
         yield admin_page, app_page, fetch_logs
@@ -201,8 +222,13 @@ def validate_app_functionalities(app_page: "Page") -> None:
 
     sleep(10)
 
+    train_folder_dropdown = app_page.frame_locator("iframe").locator('.MuiSelect-select:below(:text(\"Train Folder\"))').first
+    train_folder_dropdown.select_option("hymenoptera_data/train")
+
+    val_folder_dropdown = app_page.frame_locator("iframe").locator('.MuiSelect-select:below(:text(\"Validation Folder\"))').first
+    val_folder_dropdown.select_option("hymenoptera_data/val")
+
     train_btn = app_page.frame_locator("iframe").locator("button:has-text(\"Start training!\")")
-    train_btn.wait_for(timeout=1000)
     train_btn.click()
 
     runs = app_page.frame_locator("iframe").locator("table tbody tr")
