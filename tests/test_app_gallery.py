@@ -2,7 +2,6 @@ import json
 import os
 from contextlib import contextmanager
 from time import sleep
-import time
 from typing import Generator
 
 import pytest
@@ -14,9 +13,9 @@ from lightning_app.utilities.network import LightningClient
 from lightning_cloud.openapi.rest import ApiException
 from lightning_cloud.openapi import V1LightningworkState
 
-# if _is_playwright_available():
-import playwright
-from playwright.sync_api import Page, HttpCredentials, sync_playwright, expect
+if _is_playwright_available():
+    import playwright
+    from playwright.sync_api import Page, HttpCredentials, sync_playwright, expect
 
 
 @requires("playwright")
@@ -144,7 +143,7 @@ def clone_and_run_from_gallery_app_page(app_gallery_page) -> Generator:
     running = False
 
     while not running:
-        time.sleep(10)
+        sleep(10)
 
         works = client.lightningwork_service_list_lightningwork(
             project_id=project.project_id,
@@ -157,7 +156,7 @@ def clone_and_run_from_gallery_app_page(app_gallery_page) -> Generator:
                     running = True
 
     # Sleep to give the server time to start
-    time.sleep(180)
+    sleep(180)
 
     try:
         yield admin_page, app_page, fetch_logs
