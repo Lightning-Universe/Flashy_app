@@ -54,6 +54,7 @@ def get_gallery_app_page(app_name) -> Generator:
             [Config.id, Config.key, token],
         )
 
+        MAX_RETRY_COUNT = 5
         for retry_count in range(MAX_RETRY_COUNT):
             try:
                 gallery_page.goto(f"{Config.url}/apps")
