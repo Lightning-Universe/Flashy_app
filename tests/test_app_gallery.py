@@ -60,8 +60,9 @@ def get_gallery_app_page(app_name) -> Generator:
                 gallery_page.goto(f"{Config.url}/apps")
             except playwright._impl._api_types.TimeoutError as ex:
                 try_ex = ex
-            try_ex = None
-            break
+            else:
+                try_ex = None
+                break
         if try_ex:
             raise try_ex
 
