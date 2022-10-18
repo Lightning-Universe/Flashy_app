@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/static/css/main.2c16595e.css",
-    "main.js": "/static/js/main.acd32159.js",
-    "static/js/787.5401cbb7.chunk.js": "/static/js/787.5401cbb7.chunk.js",
+    "main.js": "/static/js/main.76c6946d.js",
+    "static/js/787.cc82dd46.chunk.js": "/static/js/787.cc82dd46.chunk.js",
     "static/media/UCity-Regular.otf": "/static/media/UCity-Regular.e28f5006c1976d08baaa.otf",
     "static/media/UCity-Light.otf": "/static/media/UCity-Light.8352e423a843d9a0c52a.otf",
     "static/media/UCity-Semibold.otf": "/static/media/UCity-Semibold.b37489cc447430fe4ba7.otf",
@@ -10,11 +10,11 @@
     "static/media/flashy.svg": "/static/media/flashy.ba6f438faad58fd33b1444ae55d60fce.svg",
     "index.html": "/index.html",
     "main.2c16595e.css.map": "/static/css/main.2c16595e.css.map",
-    "main.acd32159.js.map": "/static/js/main.acd32159.js.map",
-    "787.5401cbb7.chunk.js.map": "/static/js/787.5401cbb7.chunk.js.map"
+    "main.76c6946d.js.map": "/static/js/main.76c6946d.js.map",
+    "787.cc82dd46.chunk.js.map": "/static/js/787.cc82dd46.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.2c16595e.css",
-    "static/js/main.acd32159.js"
+    "static/js/main.76c6946d.js"
   ]
 }
