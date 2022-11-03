@@ -16,10 +16,10 @@ from flashy.components.utilities import generate_script
 class FiftyOneBuildConfig(L.BuildConfig):
     def build_commands(self) -> List[str]:
         return [
-            "pip install lightning-flash[image]==0.7.5 fiftyone==0.15.1",
-            "pip uninstall -y opencv-python",
-            "pip uninstall -y opencv-python-headless",
-            "pip install opencv-python-headless==4.5.5.64",
+            "python -m pip install lightning-flash[image]==0.7.5 fiftyone==0.15.1",
+            "python -m pip uninstall -y opencv-python",
+            "python -m pip uninstall -y opencv-python-headless",
+            "python -m pip install opencv-python-headless==4.5.5.64",
         ]
 
 

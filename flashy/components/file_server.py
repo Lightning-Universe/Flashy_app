@@ -17,7 +17,7 @@ from lightning.app.storage import Drive
 @dataclass
 class FileServerBuildConfig(L.BuildConfig):
     def build_commands(self) -> List[str]:
-        return ["pip install Flask==2.1.2 Flask-Cors==3.0.10 python-magic==0.4.27"]
+        return ["python -m pip install Flask==2.1.2 Flask-Cors==3.0.10 python-magic==0.4.27"]
 
 
 def handle_error(fn):
