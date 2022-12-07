@@ -24,7 +24,7 @@ image_classification = TaskMeta(
     "val_accuracy",
     True,
     False,
-    ["lightning-flash[image]==0.7.5"],
+    ["lightning-flash[image]==0.8.1"],
 )
 
 text_classification = TaskMeta(
@@ -36,5 +36,5 @@ text_classification = TaskMeta(
     "val_accuracy",
     False,
     True,
-    ["lightning-flash[text]==0.7.5"],
+    ["lightning-flash[text]==0.8.1"],
 )
