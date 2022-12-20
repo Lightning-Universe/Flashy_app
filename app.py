@@ -38,6 +38,10 @@ class Flashy(L.LightningFlow):
         )
         self.checkpoints_server_url: str = ""
 
+    @property
+    def ready(self):
+        return self.file_upload.ready and self.checkpoints_server.ready
+
     def run(self):
         self.file_upload_url = self.file_upload.url
         self.file_upload.run()
