@@ -53,6 +53,8 @@ class FileServer(L.LightningWork):
 
         self.uploaded_files: Dict[str, Dict[str, Union[Tuple[int, int], bool]]] = dict()
 
+        self.ready = False
+
     def get_filepath(self, path: str) -> str:
         return os.path.join(self.base_dir, path)
 
@@ -291,4 +293,5 @@ class FileServer(L.LightningWork):
         def get_file(file_id: str):
             return self.get_file(file_id)
 
+        self.ready = True
         app.run(host=self.host, port=self.port, load_dotenv=False)
