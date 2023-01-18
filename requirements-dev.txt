@@ -1,4 +1,4 @@
-./requirements.txt
+-r ./requirements.txt
 
 fiftyone==0.16.0
 lightning-flash[image, text]==0.8.1
