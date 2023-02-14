@@ -4,6 +4,10 @@
 
 **The AutoML App**
 
+[![Lightning](https://img.shields.io/badge/-Lightning-792ee5?logo=pytorchlightning&logoColor=white)](https://lightning.ai)
+![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+
+
 </div>
 
 ## Running the app
