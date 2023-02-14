@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
-import lightning as L
+from lightning import LightningFlow
 from lightning.app.storage import Drive
 from ray import tune
 
@@ -59,7 +59,7 @@ def _generate_runs(count: int, task: str, search_space: Dict) -> List[Dict[str, 
     return runs
 
 
-class HPOManager(L.LightningFlow):
+class HPOManager(LightningFlow):
     """The HPOManager is used to suggest a list of configurations (hyper-parameters) to run with some configuration from
     the user for the given task."""
 

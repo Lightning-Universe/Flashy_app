@@ -8,13 +8,13 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Dict, List, Optional, Tuple, Union
 
-import lightning as L
 import requests
+from lightning import LightningWork, BuildConfig
 from lightning.app.storage import Drive
 
 
 @dataclass
-class FileServerBuildConfig(L.BuildConfig):
+class FileServerBuildConfig(BuildConfig):
     def build_commands(self) -> List[str]:
         return ["python -m pip install Flask==2.1.2 Flask-Cors==3.0.10 python-magic==0.4.27"]
 
@@ -36,7 +36,7 @@ def handle_error(fn):
     return inner
 
 
-class FileServer(L.LightningWork):
+class FileServer(LightningWork):
     def __init__(self, drive: Drive, base_dir: str = ".", chunk_size=10240, **kwargs):
         super().__init__(cloud_build_config=FileServerBuildConfig(), **kwargs)
 

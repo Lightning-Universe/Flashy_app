@@ -12,7 +12,6 @@ recursive-include flashy *.py
 
 # Include templates
 recursive-include flashy/templates *.jinja
-
 recursive-include flashy/ui/build
 
 # Include the license file
@@ -42,8 +41,5 @@ exclude Makefile
 
 prune .git
 prune .github
-prune .circleci
-prune notebook*
 prune temp*
 prune test*
-prune benchmark*
