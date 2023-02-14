@@ -107,7 +107,6 @@ class HPOManager(L.LightningFlow):
             self.runs.run(self.dataset, generated_runs)
 
         for sweep_id, runs in self.running_runs.items():
-
             if sweep_id not in self.results:
                 self.results[sweep_id] = {}
 
