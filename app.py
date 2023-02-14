@@ -1,7 +1,4 @@
 import os
-import sys
-
-sys.path.append(os.path.dirname(__file__))
 
 import lightning as L
 from lightning.app.frontend import StaticWebFrontend  # noqa: E402
@@ -13,9 +10,7 @@ from flashy.hpo_manager import HPOManager  # noqa: E402
 
 class ReactUI(L.LightningFlow):
     def configure_layout(self):
-        return StaticWebFrontend(
-            os.path.join(os.path.dirname(__file__), "flashy", "ui", "build")
-        )
+        return StaticWebFrontend(os.path.join(os.path.dirname(__file__), "flashy", "ui", "build"))
 
 
 class Flashy(L.LightningFlow):
@@ -33,9 +28,7 @@ class Flashy(L.LightningFlow):
         self.file_upload = FileServer(self.datasets, cache_calls=True, parallel=True)
         self.file_upload_url: str = ""
 
-        self.checkpoints_server = FileServer(
-            self.checkpoints, cache_calls=True, parallel=True
-        )
+        self.checkpoints_server = FileServer(self.checkpoints, cache_calls=True, parallel=True)
         self.checkpoints_server_url: str = ""
 
     @property
@@ -57,4 +50,5 @@ class Flashy(L.LightningFlow):
         ]
 
 
-app = L.LightningApp(Flashy())
+if __name__ == "__main__":
+    app = L.LightningApp(Flashy())

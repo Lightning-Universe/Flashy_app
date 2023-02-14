@@ -11,9 +11,7 @@ class WorkManager(LightningFlow):
         self.groups = groups
 
         # Maps collection name -> work name -> work attribute
-        self.managed_works: Dict[str, Dict[str, str]] = {
-            group: {} for group in self.groups
-        }
+        self.managed_works: Dict[str, Dict[str, str]] = {group: {} for group in self.groups}
 
     def register_work(self, group, work_name, work):
         work_attribute = uuid.uuid4().hex

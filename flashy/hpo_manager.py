@@ -101,11 +101,7 @@ class HPOManager(L.LightningFlow):
                 run["data_config"] = self.data_config
             logging.info(f"Running: {generated_runs}")
 
-            sweep_id = (
-                max(int(id) for id in self.running_runs.keys()) + 1
-                if self.running_runs
-                else 1
-            )
+            sweep_id = max(int(id) for id in self.running_runs.keys()) + 1 if self.running_runs else 1
             self.running_runs[sweep_id] = generated_runs
 
             self.runs.run(self.dataset, generated_runs)

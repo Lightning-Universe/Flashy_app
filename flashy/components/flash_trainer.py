@@ -22,9 +22,7 @@ class FlashTrainer(TracerPythonScript):
     def __init__(self, task: str, datasets: Drive, checkpoints: Drive, **kwargs):
         super().__init__(
             __file__,
-            cloud_build_config=L.BuildConfig(
-                requirements=getattr(tasks, task).requirements
-            ),
+            cloud_build_config=L.BuildConfig(requirements=getattr(tasks, task).requirements),
             raise_exception=True,
             parallel=True,
             **kwargs,
@@ -101,18 +99,14 @@ class FlashTrainer(TracerPythonScript):
     def _run_tracer(self, init_globals):
         sys.argv = [self.script_path]
         tracer = self.configure_tracer()
-        return tracer.trace(
-            self.script_path, self, *self.script_args, init_globals=init_globals
-        )
+        return tracer.trace(self.script_path, self, *self.script_args, init_globals=init_globals)
 
     def on_after_run(self, res):
         checkpoint_path = f"{self.id}_checkpoint.pt"
         res["trainer"].save_checkpoint(checkpoint_path)
         self.checkpoints.put(checkpoint_path)
 
-        self.monitor = float(
-            res["trainer"].callback_metrics[self._task_meta.monitor].item()
-        )
+        self.monitor = float(res["trainer"].callback_metrics[self._task_meta.monitor].item())
 
     def on_exit(self):
         shutil.rmtree(self.script_dir)
