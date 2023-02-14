@@ -13,9 +13,7 @@ from flashy.hpo_manager import HPOManager  # noqa: E402
 
 class ReactUI(L.LightningFlow):
     def configure_layout(self):
-        return StaticWebFrontend(
-            os.path.join(os.path.dirname(__file__), "flashy", "ui", "build")
-        )
+        return StaticWebFrontend(os.path.join(os.path.dirname(__file__), "flashy", "ui", "build"))
 
 
 class Flashy(L.LightningFlow):
@@ -33,9 +31,7 @@ class Flashy(L.LightningFlow):
         self.file_upload = FileServer(self.datasets, cache_calls=True, parallel=True)
         self.file_upload_url: str = ""
 
-        self.checkpoints_server = FileServer(
-            self.checkpoints, cache_calls=True, parallel=True
-        )
+        self.checkpoints_server = FileServer(self.checkpoints, cache_calls=True, parallel=True)
         self.checkpoints_server_url: str = ""
 
     @property

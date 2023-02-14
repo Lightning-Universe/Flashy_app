@@ -53,10 +53,7 @@ class FlashFiftyOne(TracerPythonScript):
 
             _ = fiftyone.__version__
         except (ModuleNotFoundError, AttributeError):
-            msg = (
-                "Please consider installing fiftyone manually using "
-                + "`pip install fiftyone==0.16.0`"
-            )
+            msg = "Please consider installing fiftyone manually using " + "`pip install fiftyone==0.16.0`"
             raise ModuleNotFoundError(msg)
 
         self._task_meta = getattr(tasks, task)

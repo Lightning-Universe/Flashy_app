@@ -22,12 +22,8 @@ class RunScheduler(WorkManager):
                 run["task"],
                 self.datasets,
                 self.checkpoints,
-                cloud_compute=L.CloudCompute(
-                    "gpu" if run["model_config"].pop("use_gpu", False) else "cpu-small"
-                ),
+                cloud_compute=L.CloudCompute("gpu" if run["model_config"].pop("use_gpu", False) else "cpu-small"),
             )
             self.register_work("runs", run["id"], run_work)
-            logging.info(
-                f"Launching run: {run['id']}. Run work `run` method: {run_work.run}."
-            )
+            logging.info(f"Launching run: {run['id']}. Run work `run` method: {run_work.run}.")
             run_work.run(run["id"], dataset, run["data_config"], run["model_config"])

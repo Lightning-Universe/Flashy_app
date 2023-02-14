@@ -8,9 +8,8 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Dict, List, Optional, Tuple, Union
 
-import requests
-
 import lightning as L
+import requests
 from lightning.app.storage import Drive
 
 
@@ -32,11 +31,7 @@ def handle_error(fn):
             if isinstance(e, HTTPException):
                 raise
             else:
-                abort(
-                    make_response(
-                        ({"error": repr(e), "traceback": traceback.format_exc()}, 500)
-                    )
-                )
+                abort(make_response(({"error": repr(e), "traceback": traceback.format_exc()}, 500)))
 
     return inner
 
@@ -79,8 +74,7 @@ class FileServer(L.LightningWork):
                 for chunk in r.iter_content(chunk_size=self.chunk_size):
                     written_size = out_file.write(chunk)
                     self.uploaded_files[original_file]["progress"] = (
-                        self.uploaded_files[original_file]["progress"][0]
-                        + written_size,
+                        self.uploaded_files[original_file]["progress"][0] + written_size,
                         full_size,
                     )
 
@@ -97,7 +91,7 @@ class FileServer(L.LightningWork):
             "mime_type": magic.from_file(self.get_filepath(uploaded_file), mime=True),
             "drive_path": uploaded_file,
         }
-        with open(self.get_filepath(meta_file), "wt") as f:
+        with open(self.get_filepath(meta_file), "w") as f:
             json.dump(meta, f)
 
         self.drive.put(self.get_filepath(meta_file))
@@ -138,7 +132,7 @@ class FileServer(L.LightningWork):
             "mime_type": magic.from_file(self.get_filepath(uploaded_file), mime=True),
             "drive_path": uploaded_file,
         }
-        with open(self.get_filepath(meta_file), "wt") as f:
+        with open(self.get_filepath(meta_file), "w") as f:
             json.dump(meta, f)
 
         self.drive.put(self.get_filepath(meta_file))
@@ -210,9 +204,7 @@ class FileServer(L.LightningWork):
         if result is None:
             abort(
                 make_response(
-                    {
-                        "error": f"The file with identifier {file_id_or_path} could not be found!"
-                    },
+                    {"error": f"The file with identifier {file_id_or_path} could not be found!"},
                     404,
                 )
             )
@@ -240,11 +232,7 @@ class FileServer(L.LightningWork):
         if ext is not None:
             ext = ext.lower()
             ext = ext[1:] if ext.startswith(".") else ext
-            result = [
-                filename
-                for filename in result
-                if os.path.splitext(filename)[1].lower()[1:] == ext
-            ]
+            result = [filename for filename in result if os.path.splitext(filename)[1].lower()[1:] == ext]
 
         return {"asset_names": result}
 
@@ -253,10 +241,7 @@ class FileServer(L.LightningWork):
         self,
         file_id: str,
     ):
-        result = {
-            os.path.dirname(file)
-            for file in self.get_asset_names(file_id)["asset_names"]
-        }
+        result = {os.path.dirname(file) for file in self.get_asset_names(file_id)["asset_names"]}
         return {"asset_names": list(result)}
 
     def run(self):

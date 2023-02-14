@@ -22,9 +22,7 @@ if _is_playwright_available():
 @contextmanager
 def get_gallery_app_page(app_name) -> Generator:
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            timeout=5000, headless=bool(int(os.getenv("HEADLESS", "0")))
-        )
+        browser = p.chromium.launch(timeout=5000, headless=bool(int(os.getenv("HEADLESS", "0"))))
         payload = {
             "apiKey": _Config.api_key,
             "username": _Config.username,
@@ -65,7 +63,6 @@ def get_gallery_app_page(app_name) -> Generator:
         if try_ex:
             raise try_ex
 
-
         # Find the app in the gallery
         gallery_page.locator(f"text={app_name}").first.click()
         yield gallery_page
@@ -89,7 +86,6 @@ def launch_from_gallery_app_page(gallery_page) -> Generator:
 @requires("playwright")
 @contextmanager
 def clone_and_run_from_gallery_app_page(app_gallery_page) -> Generator:
-
     with app_gallery_page.expect_navigation():
         app_gallery_page.locator("text=Clone & Run").click()
 
@@ -211,9 +207,7 @@ def validate_app_functionalities(app_page: "Page") -> None:
         try:
             app_page.reload()
             sleep(5)
-            app_label = app_page.frame_locator("iframe").locator(
-                "text=Choose your AI task"
-            )
+            app_label = app_page.frame_locator("iframe").locator("text=Choose your AI task")
             app_label.wait_for(timeout=30 * 1000)
             break
         except (
@@ -222,31 +216,31 @@ def validate_app_functionalities(app_page: "Page") -> None:
         ):
             pass
 
-    input_field = app_page.frame_locator("iframe").locator('input:below(:text(\"Data URL\"))').first
+    input_field = app_page.frame_locator("iframe").locator('input:below(:text("Data URL"))').first
     input_field.wait_for(timeout=1000)
     input_field.type("https://pl-flash-data.s3.amazonaws.com/hymenoptera_data.zip")
     sleep(1)
-    upload_btn = app_page.frame_locator("iframe").locator("button:has-text(\"Upload\")")
+    upload_btn = app_page.frame_locator("iframe").locator('button:has-text("Upload")')
     upload_btn.wait_for(timeout=1000)
     upload_btn.click()
 
     sleep(10)
 
-    train_folder_dropdown = app_page.frame_locator("iframe").locator('#mui-2')
+    train_folder_dropdown = app_page.frame_locator("iframe").locator("#mui-2")
     train_folder_dropdown.click()
 
     train_folder = app_page.frame_locator("iframe").locator('text="hymenoptera_data/train"')
     train_folder.scroll_into_view_if_needed()
     train_folder.click()
 
-    val_folder_dropdown = app_page.frame_locator("iframe").locator('#mui-3')
+    val_folder_dropdown = app_page.frame_locator("iframe").locator("#mui-3")
     val_folder_dropdown.click()
 
     val_folder = app_page.frame_locator("iframe").locator('text="hymenoptera_data/val"')
     val_folder.scroll_into_view_if_needed()
     val_folder.click()
 
-    train_btn = app_page.frame_locator("iframe").locator("button:has-text(\"Start training!\")")
+    train_btn = app_page.frame_locator("iframe").locator('button:has-text("Start training!")')
     train_btn.click()
 
     # Sometimes the results don't show until we refresh the page
@@ -272,9 +266,7 @@ def test_launch_app_from_gallery():
             validate_app_functionalities(app_page)
 
 
-@pytest.mark.skipif(
-    not os.getenv("TEST_APP_NAME", None), reason="requires TEST_APP_NAME env var"
-)
+@pytest.mark.skipif(not os.getenv("TEST_APP_NAME", None), reason="requires TEST_APP_NAME env var")
 def test_clone_and_run_app_from_gallery():
     app_name = os.getenv("TEST_APP_NAME", None)
     if app_name is None:
