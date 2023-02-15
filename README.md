@@ -4,6 +4,9 @@
 
 **The AutoML App**
 
+[![Lightning](https://img.shields.io/badge/-Lightning-792ee5?logo=pytorchlightning&logoColor=white)](https://lightning.ai)
+![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+
 </div>
 
 ## Running the app
@@ -16,7 +19,6 @@ conda activate lightning
 
 git clone https://github.com/Lightning-AI/lightning
 cd lightning
-pip install -r requirements.txt
 pip install -e .
 python scripts/download_frontend.py
 
@@ -24,8 +26,7 @@ cd ../
 git clone https://github.com/Lightning-AI/LAI-Flashy-App
 cd LAI-Flashy-App
 # For local install, we keep a separate requirements file. The cloud app uses requirements.txt file.
-pip install -r requirements-dev.txt
-pip install -e .
+pip install -e .[dev]
 ```
 
 In order to run the app now (locally):

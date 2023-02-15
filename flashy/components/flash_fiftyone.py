@@ -4,7 +4,7 @@ import shutil
 import tempfile
 from typing import Dict, List, Optional
 
-import lightning as L
+from lightning import BuildConfig
 from lightning.app.components.python import TracerPythonScript
 from lightning.app.storage.path import Path
 
@@ -13,7 +13,7 @@ from flashy.components.tasks import TaskMeta
 from flashy.components.utilities import generate_script
 
 
-class FiftyOneBuildConfig(L.BuildConfig):
+class FiftyOneBuildConfig(BuildConfig):
     def build_commands(self) -> List[str]:
         return [
             "python -m pip install lightning-flash[image]==0.7.5 fiftyone==0.15.1",
