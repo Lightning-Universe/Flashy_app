@@ -2,5 +2,5 @@ fiftyone==0.19.1
 lightning-flash[image, text]==0.8.1.post0
 aiofiles
 python-magic==0.4.27
-Flask==2.1.2
+Flask==2.2.3
 Flask-Cors==3.0.10
