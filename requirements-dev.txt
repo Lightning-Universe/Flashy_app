@@ -1,4 +1,4 @@
-fiftyone==0.19.1
+fiftyone==0.20.0
 lightning-flash[image, text]==0.8.1.post0
 aiofiles
 python-magic==0.4.27
